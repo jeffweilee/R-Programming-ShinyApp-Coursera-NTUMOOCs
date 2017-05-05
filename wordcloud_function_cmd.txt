@@ -1,0 +1,1 @@
+sudo Rscript --vanilla /srv/shiny-server/app-moocs-test/wordcloud_function.R [recal or clean] [courseDBName]
