@@ -1,4 +1,4 @@
-# <center>Discussion 頁面簡介</center>
+# <center>Discussion 論壇回饋頁面簡介</center>
 <hr>
 
 ## __主要功能__

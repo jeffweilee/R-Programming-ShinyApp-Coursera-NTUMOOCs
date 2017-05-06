@@ -253,31 +253,62 @@ shinyServer(function(input, output, session) {
 			output$rating.o <- renderText({
 			  paste("Average Rating:", as.numeric(dbGetQuery(conn = con, statement = paste0("SELECT cast(avg(`feedback_rating`) AS char) FROM `feedback_course_ratings` WHERE `feedback_system`='STAR'"))[[1]]), " (1-5分)")
 			}) 
-			output$plotO.rating <- renderPlotly({
-			  onFlushed(function(){
-			    shinyjs::hide("busy_o")
-			    shinyjs::show("course_o")
-				shinyjs::show("content_o")
-			    dbDisconnect(con)
-			  }, once = TRUE, session = getDefaultReactiveDomain())
-			  rating <-
-			    dbGetQuery(
-			      conn = con,
-			      statement = paste0(
-			        "SELECT `feedback_rating`,count(*) as Number FROM `feedback_course_ratings` WHERE `feedback_system`='STAR' GROUP BY `feedback_rating`"))
-			  colnames(rating)<-c("Course Rating","Numbers of Feedback")
-			  seq<-seq(1,5,1)
-			  norating<-seq[!seq %in% (rating$`Course Rating`)]
-			  norating<-cbind(norating,rep(0,length(norating)))
-			  colnames(norating)<-c("Course Rating","Numbers of Feedback")
-			  rating<-rbind(rating,norating)
+			# output$plotO.rating <- renderPlotly({
+			#   onFlushed(function(){
+			#     shinyjs::hide("busy_o")
+			#     shinyjs::show("course_o")
+			# 	shinyjs::show("content_o")
+			#     dbDisconnect(con)
+			#   }, once = TRUE, session = getDefaultReactiveDomain())
+			#   rating <-
+			#     dbGetQuery(
+			#       conn = con,
+			#       statement = paste0(
+			#         "SELECT `feedback_rating`,count(*) as Number FROM `feedback_course_ratings` WHERE `feedback_system`='STAR' GROUP BY `feedback_rating`"))
+			#   colnames(rating)<-c("Course Rating","Numbers of Feedback")
+			#   seq<-seq(1,5,1)
+			#   norating<-seq[!seq %in% (rating$`Course Rating`)]
+			#   norating<-cbind(norating,rep(0,length(norating)))
+			#   colnames(norating)<-c("Course Rating","Numbers of Feedback")
+			#   rating<-rbind(rating,norating)
 			  
-			  ggplot(rating, aes(x=`Course Rating`, y=`Numbers of Feedback`, label=`Numbers of Feedback`)) +
-			    geom_bar(stat = "identity")+ ggtitle("Course Rating Distribution")+
-			    scale_x_continuous(breaks = seq(1, 5, 1))+ 
-			    geom_text(aes(y = `Numbers of Feedback` + 0.4))
-			  ggplotly()
+			#   ggplot(rating, aes(x=`Course Rating`, y=`Numbers of Feedback`, label=`Numbers of Feedback`)) +
+			#     geom_bar(stat = "identity")+ ggtitle("Course Rating Distribution")+
+			#     scale_x_continuous(breaks = seq(1, 5, 1))+ 
+			#     geom_text(aes(y = `Numbers of Feedback` + 0.4))
+			#   ggplotly()
+			# })
+			output$plotO.rating <- renderPlot({
+				# onFlushed(function(){
+				#     shinyjs::hide("busy_o")
+				#     shinyjs::show("course_o")
+				# 	  shinyjs::show("content_o")
+				#     dbDisconnect(con)
+			 	#  	}, once = TRUE, session = getDefaultReactiveDomain())
+				# Library
+				library(fmsb)
+			  	rating <-dbGetQuery(conn = con, statement = paste0(
+				        "SELECT `feedback_rating`,count(*) as Number FROM `feedback_course_ratings` WHERE `feedback_system`='STAR' GROUP BY `feedback_rating`"))
+
+			    r <- as.data.frame(rbind(seq(1:5),rep(0,5)))
+				r[2,r[1,] %in% rating[,1]] <- rating[,2]
+				colnames(r) <- r[1,]
+				ub <- ceiling(max(rating[,2])/10)*10
+				data <- rbind(c(rep(ub,5)),c(rep(0,5)),r[2,])
+
+				par(mfrow = c(1, 1), mar = c(0,0,3,0))
+				# Custom the radarChart !
+				radarchart( data  , axistype=1 , 		            
+				            #custom polygon
+				            pcol=rgb(0.2,0.5,0.5,0.9) , plwd=4 , 
+				            #custom the grid
+				            cglcol="grey", cglty=1, axislabcol="grey", caxislabels=seq(0,ub,ub/5), cglwd=0.8,
+				            #custom labels
+				            vlcex=0.8,
+				            title="Course Rating"
+				)
 			})
+
 			output$plotO.pass_item <- renderPlotly({
 			  PNP <- dbGetQuery(conn = con, statement = paste0("select d.`course_item_name` as `Item Name`, c.`course_item_passing_state_desc` as `Pass or Not`,c.`count(*)` as NumberOfPeople from (select a.*,b.`course_item_passing_state_desc` from (SELECT `course_item_id`,`course_item_passing_state_id`,count(*) FROM `course_item_grades` group by `course_item_id`, `course_item_passing_state_id`) as a inner join (select * from `course_item_passing_states`) as b on a.`course_item_passing_state_id`=b.`course_item_passing_state_id`) as c inner join (select `course_item_id`,`course_item_name` from `course_items` ) as d on c.`course_item_id`=d.`course_item_id`"))
 			  PNP$`Item Name` <- factor(PNP$`Item Name`, levels=unique(PNP$`Item Name`))
@@ -306,9 +337,10 @@ shinyServer(function(input, output, session) {
 							sum<-sum(Q.Gender[,2])
 							Q.Gender<-cbind(Q.Gender,percent((Q.Gender[,2]/sum)))
 							names(Q.Gender)<-c("性別","人數","百分比")
+							Q.Gender$`性別` <- factor(Q.Gender$`性別`, levels=Q.Gender$`性別`[order(-Q.Gender$`人數`)])
 							ggplot(Q.Gender, aes(x=`性別`, y=`人數`, label=`百分比`)) +
 							geom_bar(stat = "identity")+ ggtitle("修課學生性別比")+
-							geom_text(aes(y = `人數` + 1))
+							geom_text(aes(y = `人數` + 1))+theme_bw()
 							ggplotly()
 						}
 					})
@@ -318,9 +350,10 @@ shinyServer(function(input, output, session) {
 							sum<-sum(Q.Age[,2])
 							Q.Age<-cbind(Q.Age,percent(Q.Age[,2]/sum))
 							names(Q.Age)<-c("年齡","人數","百分比")
+							#Q.Age$`年齡` <- factor(Q.Age$`年齡`, levels=Q.Age$`年齡`[order(Q.Age$`人數`)])
 							ggplot(Q.Age, aes(x=`年齡`, y=`人數`, label=`百分比`)) +
 							geom_bar(stat = "identity")+ ggtitle("修課學生年齡分布")+
-							geom_text(aes(y = `人數` + 1))
+							geom_text(aes(y = `人數` + 1))+theme_bw()
 							ggplotly()
 						}
 					})
@@ -330,25 +363,10 @@ shinyServer(function(input, output, session) {
 							sum<-sum(Q.Employ[,2])
 							Q.Employ<-cbind(Q.Employ,percent(Q.Employ[,2]/sum))
 							names(Q.Employ)<-c("就業狀況","人數","百分比")
+							Q.Employ$`就業狀況` <- factor(Q.Employ$`就業狀況`, levels=Q.Employ$`就業狀況`[order(-Q.Employ$`人數`)])
 							ggplot(Q.Employ, aes(x=`就業狀況`, y=`人數`, label=`百分比`)) +
 							geom_bar(stat = "identity")+ ggtitle("就業狀況")+
-							geom_text(aes(y = `人數` + 1))
-							ggplotly()
-						}
-					})
-					output$Q.Background.o <- renderPlotly({
-						
-
-						Q.Background <- dbGetQuery(conn = con, statement = paste0("SELECT `Q5_以下何者較符合您專業領域的背景？`,count(*) FROM `questionaire` group by `Q5_以下何者較符合您專業領域的背景？` order by count(*) desc"))
-						if(ncol(Q.Background) > 0){
-							sum<-sum(Q.Background[,2])
-							Q.Background<-cbind(Q.Background,(Q.Background[,2]/sum)*100)
-							names(Q.Background)<-c("Students Background","Number of People","Percentage")
-							Q.Background$`Students Background` <- factor(Q.Background$`Students Background`, levels = Q.Background$`Students Background`[seq(1,max(1,length(Q.Background$`Students Background`)),1)])
-							ggplot(Q.Background, aes(x=`Students Background`, y=`Number of People`, label=percent(`Percentage`/100))) +
-							geom_bar(stat = "identity")+ ggtitle("Percentage of Students' Background")+
-							geom_text(aes(y = `Number of People` + 1))+
-							theme(axis.text.x = element_text(angle = 45, hjust = 0.5,vjust = 1))
+							geom_text(aes(y = `人數` + 1))+theme_bw()
 							ggplotly()
 						}
 					})
@@ -358,9 +376,10 @@ shinyServer(function(input, output, session) {
 							sum<-sum(Q.Education[,2])
 							Q.Education<-cbind(Q.Education,percent(Q.Education[,2]/sum))
 							names(Q.Education)<-c("最高教育程度","人數","百分比")
+							Q.Education$`最高教育程度` <- factor(Q.Education$`最高教育程度`, levels=Q.Education$`最高教育程度`[order(-Q.Education$`人數`)])
 							ggplot(Q.Education, aes(x=`最高教育程度`, y=`人數`, label=`百分比`)) +
 							geom_bar(stat = "identity")+ ggtitle("最高教育程度")+
-							geom_text(aes(y = `人數` + 1))
+							geom_text(aes(y = `人數` + 1))+theme_bw()
 							ggplotly()
 						}
 					})
@@ -370,9 +389,10 @@ shinyServer(function(input, output, session) {
 							sum<-sum(Q.Know[,2])
 							Q.Know<-cbind(Q.Know,percent(Q.Know[,2]/sum))
 							names(Q.Know)<-c("學生修課前課程了解程度","人數","百分比")
+							Q.Know$`學生修課前課程了解程度` <- factor(Q.Know$`學生修課前課程了解程度`, levels=Q.Know$`學生修課前課程了解程度`[order(-Q.Know$`人數`)])
 							ggplot(Q.Know, aes(x=`學生修課前課程了解程度`, y=`人數`, label=`百分比`)) +
 							geom_bar(stat = "identity")+ ggtitle("學生修課前課程了解程度")+
-							geom_text(aes(y = `人數` + 1))
+							geom_text(aes(y = `人數` + 1))+theme_bw()
 							ggplotly()
 						}
 					})
@@ -382,9 +402,10 @@ shinyServer(function(input, output, session) {
 							sum<-sum(Q.Time[,2])
 							Q.Time<-cbind(Q.Time,percent(Q.Time[,2]/sum))
 							names(Q.Time)<-c("學生修課花費時間","人數","百分比")
+							Q.Time$`學生修課花費時間` <- factor(Q.Time$`學生修課花費時間`, levels=Q.Time$`學生修課花費時間`[order(-Q.Time$`人數`)])
 							ggplot(Q.Time, aes(x=`學生修課花費時間`, y=`人數`, label=`百分比`)) +
 							geom_bar(stat = "identity")+ ggtitle("學生修課花費時間")+
-							geom_text(aes(y = `人數` + 1))
+							geom_text(aes(y = `人數` + 1))+theme_bw()
 							ggplotly()
 						}
 					})
@@ -393,12 +414,27 @@ shinyServer(function(input, output, session) {
 						if(ncol(Q.LearnM) > 0){
 							sum<-sum(Q.LearnM[,2])
 							Q.LearnM<-cbind(Q.LearnM,(Q.LearnM[,2]/sum)*100)
-							names(Q.LearnM)<-c("Students LearnM","Number of People","Percentage")
-							Q.LearnM$`Students LearnM` <- factor(Q.LearnM$`Students LearnM`, levels = Q.LearnM$`Students LearnM`[seq(1,max(1,length(Q.LearnM$`Students LearnM`)),1)])
-							ggplot(Q.LearnM, aes(x=`Students LearnM`, y=`Number of People`, label=percent(`Percentage`/100))) +
-							geom_bar(stat = "identity")+ ggtitle("Percentage of Students Learning Method")+
-							geom_text(aes(y = `Number of People` + 1))+
-							theme(axis.text.x = element_text(angle = 45, hjust = 0.5,vjust = 1))
+							names(Q.LearnM)<-c("Students Learning Method","Number of People","Percentage")
+							Q.LearnM$`Students Learning Method` <- factor(Q.LearnM$`Students Learning Method`, levels = Q.LearnM$`Students Learning Method`[seq(1,max(1,length(Q.LearnM$`Students Learning Method`)),1)])
+							ggplot(Q.LearnM, aes(x=`Students Learning Method`, y=`Number of People`, label=percent(`Percentage`/100))) +
+							geom_bar(stat = "identity")+ ggtitle("學生學習方法")+
+							geom_text(aes(y = `Number of People` + 1))+theme_bw()+
+							theme(axis.title.x = element_blank(), axis.text.x = element_text(angle = 45, hjust = 0.5,vjust = 1))
+							ggplotly()
+						}
+					})
+
+					output$Q.Background.o <- renderPlotly({
+						Q.Background <- dbGetQuery(conn = con, statement = paste0("SELECT `Q5_以下何者較符合您專業領域的背景？`,count(*) FROM `questionaire` group by `Q5_以下何者較符合您專業領域的背景？` order by count(*) desc"))
+						if(ncol(Q.Background) > 0){
+							sum<-sum(Q.Background[,2])
+							Q.Background<-cbind(Q.Background,(Q.Background[,2]/sum)*100)
+							names(Q.Background)<-c("Students Background","Number of People","Percentage")
+							Q.Background$`Students Background` <- factor(Q.Background$`Students Background`, levels = Q.Background$`Students Background`[seq(1,max(1,length(Q.Background$`Students Background`)),1)])
+							ggplot(Q.Background, aes(x=`Students Background`, y=`Number of People`, label=percent(`Percentage`/100))) +
+							geom_bar(stat = "identity")+ ggtitle("學生背景")+
+							geom_text(aes(y = `Number of People` + 1))+theme_bw()+
+							theme(axis.title.x = element_blank(), axis.text.x = element_text(angle = 45, hjust = 0.5,vjust = 1))
 							ggplotly()
 						}
 					})
@@ -409,19 +445,19 @@ shinyServer(function(input, output, session) {
 						if(ncol(Q.LearnT) > 0){
 							sum<-sum(Q.LearnT[,2])
 						    Q.LearnT<-cbind(Q.LearnT,(Q.LearnT[,2]/sum)*100)
-						    names(Q.LearnT)<-c("Students LearnT","Number of People","Percentage")
-						    Q.LearnT$`Students LearnT` <- factor(Q.LearnT$`Students LearnT`, levels = Q.LearnT$`Students LearnT`[seq(1,max(1,length(Q.LearnT$`Students LearnT`)),1)])
-						    ggplot(Q.LearnT, aes(x=`Students LearnT`, y=`Number of People`, label=`Number of People`)) +
-						      geom_bar(stat = "identity")+ ggtitle("Percentage of Students' Learning Time")+
-						      geom_text(aes(y = `Number of People` + 1))+
-						      theme(axis.text.x = element_text(angle = 45, hjust = 0.5,vjust = 1))
+						    names(Q.LearnT)<-c("Students Learning Time","Number of People","Percentage")
+						    Q.LearnT$`Students Learning Time` <- factor(Q.LearnT$`Students Learning Time`, levels = Q.LearnT$`Students Learning Time`[seq(1,max(1,length(Q.LearnT$`Students Learning Time`)),1)])
+						    ggplot(Q.LearnT, aes(x=`Students Learning Time`, y=`Number of People`, label=`Number of People`)) +
+						      geom_bar(stat = "identity")+ ggtitle("Percentage of Students' Learning Time 學生學習時間")+
+						      geom_text(aes(y = `Number of People` + 1))+theme_bw()+
+						      theme(axis.title.x = element_blank(), axis.text.x = element_text(angle = 45, hjust = 0.5,vjust = 1))
 						    ggplotly()
 						}
 					})
 
-					###########
+					##########################
 					# pre_all
-					###########
+					##########################
 
 					output$Q.schedule.o <- renderPlotly({
 					  Q.schedule <- dbGetQuery(conn = con, statement = paste0("SELECT `Q25`,count(*) FROM `pre_all` where `Q25` not like 'Q%' group by `Q25` order by count(*) desc"))
@@ -440,7 +476,7 @@ shinyServer(function(input, output, session) {
 					  sum<-sum(Q.score[,2])
 					  Q.score<-cbind(Q.score,(Q.score[,2]/sum)*100)
 					  names(Q.score)<-c("Students score","Number of People","Percentage")
-					  Q.score$`Students score` <- factor(Q.score$`Students score`, levels = Q.score$`Students score`[seq(1,max(1,length(Q.score$`Students score`)),1)])
+					  #Q.score$`Students score` <- factor(Q.score$`Students score`, levels = Q.score$`Students score`[seq(1,max(1,length(Q.score$`Students score`)),1)])
 					  ggplot(Q.score, aes(x=`Students score`, y=`Number of People`, label=percent(`Percentage`/100))) +
 					    geom_bar(stat = "identity")+ ggtitle("我認為自己熟悉行銷策略 (STP) 以及品牌管理的應用及實務")+
 					    geom_text(aes(y = `Number of People` + 1))+
@@ -453,7 +489,7 @@ shinyServer(function(input, output, session) {
 					  sum<-sum(Q.score[,2])
 					  Q.score<-cbind(Q.score,(Q.score[,2]/sum)*100)
 					  names(Q.score)<-c("Students score","Number of People","Percentage")
-					  Q.score$`Students score` <- factor(Q.score$`Students score`, levels = Q.score$`Students score`[seq(1,max(1,length(Q.score$`Students score`)),1)])
+					  #Q.score$`Students score` <- factor(Q.score$`Students score`, levels = Q.score$`Students score`[seq(1,max(1,length(Q.score$`Students score`)),1)])
 					  ggplot(Q.score, aes(x=`Students score`, y=`Number of People`, label=percent(`Percentage`/100))) +
 					    geom_bar(stat = "identity")+ ggtitle("我認為這堂課有助於我學習到如何思辨")+
 					    geom_text(aes(y = `Number of People` + 1))+
@@ -465,7 +501,7 @@ shinyServer(function(input, output, session) {
 					  sum<-sum(Q.score[,2])
 					  Q.score<-cbind(Q.score,(Q.score[,2]/sum)*100)
 					  names(Q.score)<-c("Students score","Number of People","Percentage")
-					  Q.score$`Students score` <- factor(Q.score$`Students score`, levels = Q.score$`Students score`[seq(1,max(1,length(Q.score$`Students score`)),1)])
+					  #Q.score$`Students score` <- factor(Q.score$`Students score`, levels = Q.score$`Students score`[seq(1,max(1,length(Q.score$`Students score`)),1)])
 					  ggplot(Q.score, aes(x=`Students score`, y=`Number of People`, label=percent(`Percentage`/100))) +
 					    geom_bar(stat = "identity")+ ggtitle("我覺得自己能夠將課堂的知識用在生活中")+
 					    geom_text(aes(y = `Number of People` + 1))+
@@ -477,7 +513,7 @@ shinyServer(function(input, output, session) {
 					  sum<-sum(Q.score[,2])
 					  Q.score<-cbind(Q.score,(Q.score[,2]/sum)*100)
 					  names(Q.score)<-c("Students score","Number of People","Percentage")
-					  Q.score$`Students score` <- factor(Q.score$`Students score`, levels = Q.score$`Students score`[seq(1,max(1,length(Q.score$`Students score`)),1)])
+					  #Q.score$`Students score` <- factor(Q.score$`Students score`, levels = Q.score$`Students score`[seq(1,max(1,length(Q.score$`Students score`)),1)])
 					  ggplot(Q.score, aes(x=`Students score`, y=`Number of People`, label=percent(`Percentage`/100))) +
 					    geom_bar(stat = "identity")+ ggtitle("我能夠無礙的使用網路社群平台與其他人交流")+
 					    geom_text(aes(y = `Number of People` + 1))+
@@ -490,7 +526,7 @@ shinyServer(function(input, output, session) {
 					  sum<-sum(Q.score[,2])
 					  Q.score<-cbind(Q.score,(Q.score[,2]/sum)*100)
 					  names(Q.score)<-c("Students score","Number of People","Percentage")
-					  Q.score$`Students score` <- factor(Q.score$`Students score`, levels = Q.score$`Students score`[seq(1,max(1,length(Q.score$`Students score`)),1)])
+					  #Q.score$`Students score` <- factor(Q.score$`Students score`, levels = Q.score$`Students score`[seq(1,max(1,length(Q.score$`Students score`)),1)])
 					  ggplot(Q.score, aes(x=`Students score`, y=`Number of People`, label=percent(`Percentage`/100))) +
 					    geom_bar(stat = "identity")+ ggtitle("我能熟練使用網路資源搜尋問題")+
 					    geom_text(aes(y = `Number of People` + 1))+
@@ -502,7 +538,7 @@ shinyServer(function(input, output, session) {
 					  sum<-sum(Q.score[,2])
 					  Q.score<-cbind(Q.score,(Q.score[,2]/sum)*100)
 					  names(Q.score)<-c("Students score","Number of People","Percentage")
-					  Q.score$`Students score` <- factor(Q.score$`Students score`, levels = Q.score$`Students score`[seq(1,max(1,length(Q.score$`Students score`)),1)])
+					  #Q.score$`Students score` <- factor(Q.score$`Students score`, levels = Q.score$`Students score`[seq(1,max(1,length(Q.score$`Students score`)),1)])
 					  ggplot(Q.score, aes(x=`Students score`, y=`Number of People`, label=percent(`Percentage`/100))) +
 					    geom_bar(stat = "identity")+ ggtitle("我認為自己透過觀看影片學習，有不錯的學習效果")+
 					    geom_text(aes(y = `Number of People` + 1))+
@@ -515,7 +551,7 @@ shinyServer(function(input, output, session) {
 					  sum<-sum(Q.score[,2])
 					  Q.score<-cbind(Q.score,(Q.score[,2]/sum)*100)
 					  names(Q.score)<-c("Students score","Number of People","Percentage")
-					  Q.score$`Students score` <- factor(Q.score$`Students score`, levels = Q.score$`Students score`[seq(1,max(1,length(Q.score$`Students score`)),1)])
+					  #Q.score$`Students score` <- factor(Q.score$`Students score`, levels = Q.score$`Students score`[seq(1,max(1,length(Q.score$`Students score`)),1)])
 					  ggplot(Q.score, aes(x=`Students score`, y=`Number of People`, label=percent(`Percentage`/100))) +
 					    geom_bar(stat = "identity")+ ggtitle("我認為這堂課的內容很適合用影音的方式教學")+
 					    geom_text(aes(y = `Number of People` + 1))+
@@ -528,7 +564,7 @@ shinyServer(function(input, output, session) {
 					  sum<-sum(Q.score[,2])
 					  Q.score<-cbind(Q.score,(Q.score[,2]/sum)*100)
 					  names(Q.score)<-c("Students score","Number of People","Percentage")
-					  Q.score$`Students score` <- factor(Q.score$`Students score`, levels = Q.score$`Students score`[seq(1,max(1,length(Q.score$`Students score`)),1)])
+					  #Q.score$`Students score` <- factor(Q.score$`Students score`, levels = Q.score$`Students score`[seq(1,max(1,length(Q.score$`Students score`)),1)])
 					  ggplot(Q.score, aes(x=`Students score`, y=`Number of People`, label=percent(`Percentage`/100))) +
 					    geom_bar(stat = "identity")+ ggtitle("老師每週的作業規劃對我來說不是負擔")+
 					    geom_text(aes(y = `Number of People` + 1))+
@@ -541,7 +577,7 @@ shinyServer(function(input, output, session) {
 					  sum<-sum(Q.score[,2])
 					  Q.score<-cbind(Q.score,(Q.score[,2]/sum)*100)
 					  names(Q.score)<-c("Students score","Number of People","Percentage")
-					  Q.score$`Students score` <- factor(Q.score$`Students score`, levels = Q.score$`Students score`[seq(1,max(1,length(Q.score$`Students score`)),1)])
+					  #Q.score$`Students score` <- factor(Q.score$`Students score`, levels = Q.score$`Students score`[seq(1,max(1,length(Q.score$`Students score`)),1)])
 					  ggplot(Q.score, aes(x=`Students score`, y=`Number of People`, label=percent(`Percentage`/100))) +
 					    geom_bar(stat = "identity")+ ggtitle("我能夠每週都跟上老師的進度")+
 					    geom_text(aes(y = `Number of People` + 1))+
@@ -554,7 +590,7 @@ shinyServer(function(input, output, session) {
 					  sum<-sum(Q.score[,2])
 					  Q.score<-cbind(Q.score,(Q.score[,2]/sum)*100)
 					  names(Q.score)<-c("Students score","Number of People","Percentage")
-					  Q.score$`Students score` <- factor(Q.score$`Students score`, levels = Q.score$`Students score`[seq(1,max(1,length(Q.score$`Students score`)),1)])
+					  #Q.score$`Students score` <- factor(Q.score$`Students score`, levels = Q.score$`Students score`[seq(1,max(1,length(Q.score$`Students score`)),1)])
 					  ggplot(Q.score, aes(x=`Students score`, y=`Number of People`, label=percent(`Percentage`/100))) +
 					    geom_bar(stat = "identity")+ ggtitle("我認為自己能夠達到通過這堂課的標準")+
 					    geom_text(aes(y = `Number of People` + 1))+
@@ -566,7 +602,7 @@ shinyServer(function(input, output, session) {
 					  sum<-sum(Q.score[,2])
 					  Q.score<-cbind(Q.score,(Q.score[,2]/sum)*100)
 					  names(Q.score)<-c("Students score","Number of People","Percentage")
-					  Q.score$`Students score` <- factor(Q.score$`Students score`, levels = Q.score$`Students score`[seq(1,max(1,length(Q.score$`Students score`)),1)])
+					  #Q.score$`Students score` <- factor(Q.score$`Students score`, levels = Q.score$`Students score`[seq(1,max(1,length(Q.score$`Students score`)),1)])
 					  ggplot(Q.score, aes(x=`Students score`, y=`Number of People`, label=percent(`Percentage`/100))) +
 					    geom_bar(stat = "identity")+ ggtitle("我熟悉並能夠說明行銷及顧客關係管理的基本概念")+
 					    geom_text(aes(y = `Number of People` + 1))+
@@ -579,7 +615,7 @@ shinyServer(function(input, output, session) {
 					  sum<-sum(Q.score[,2])
 					  Q.score<-cbind(Q.score,(Q.score[,2]/sum)*100)
 					  names(Q.score)<-c("Students score","Number of People","Percentage")
-					  Q.score$`Students score` <- factor(Q.score$`Students score`, levels = Q.score$`Students score`[seq(1,max(1,length(Q.score$`Students score`)),1)])
+					  #Q.score$`Students score` <- factor(Q.score$`Students score`, levels = Q.score$`Students score`[seq(1,max(1,length(Q.score$`Students score`)),1)])
 					  ggplot(Q.score, aes(x=`Students score`, y=`Number of People`, label=percent(`Percentage`/100))) +
 					    geom_bar(stat = "identity")+ ggtitle("我熟悉行銷策略 (STP) 以及品牌管理的應用及實務")+
 					    geom_text(aes(y = `Number of People` + 1))+
@@ -592,7 +628,7 @@ shinyServer(function(input, output, session) {
 					  sum<-sum(Q.score[,2])
 					  Q.score<-cbind(Q.score,(Q.score[,2]/sum)*100)
 					  names(Q.score)<-c("Students score","Number of People","Percentage")
-					  Q.score$`Students score` <- factor(Q.score$`Students score`, levels = Q.score$`Students score`[seq(1,max(1,length(Q.score$`Students score`)),1)])
+					  #Q.score$`Students score` <- factor(Q.score$`Students score`, levels = Q.score$`Students score`[seq(1,max(1,length(Q.score$`Students score`)),1)])
 					  ggplot(Q.score, aes(x=`Students score`, y=`Number of People`, label=percent(`Percentage`/100))) +
 					    geom_bar(stat = "identity")+ ggtitle("我能夠說明數位時代之下消費市場的五大現像， 以及這些新興消費現像對行銷策略及品牌管理的影響")+
 					    geom_text(aes(y = `Number of People` + 1))+
@@ -605,7 +641,7 @@ shinyServer(function(input, output, session) {
 					  sum<-sum(Q.score[,2])
 					  Q.score<-cbind(Q.score,(Q.score[,2]/sum)*100)
 					  names(Q.score)<-c("Students score","Number of People","Percentage")
-					  Q.score$`Students score` <- factor(Q.score$`Students score`, levels = Q.score$`Students score`[seq(1,max(1,length(Q.score$`Students score`)),1)])
+					  #Q.score$`Students score` <- factor(Q.score$`Students score`, levels = Q.score$`Students score`[seq(1,max(1,length(Q.score$`Students score`)),1)])
 					  ggplot(Q.score, aes(x=`Students score`, y=`Number of People`, label=percent(`Percentage`/100))) +
 					    geom_bar(stat = "identity")+ ggtitle("這堂課有助我思辨的能力")+
 					    geom_text(aes(y = `Number of People` + 1))+
@@ -618,7 +654,7 @@ shinyServer(function(input, output, session) {
 					  sum<-sum(Q.score[,2])
 					  Q.score<-cbind(Q.score,(Q.score[,2]/sum)*100)
 					  names(Q.score)<-c("Students score","Number of People","Percentage")
-					  Q.score$`Students score` <- factor(Q.score$`Students score`, levels = Q.score$`Students score`[seq(1,max(1,length(Q.score$`Students score`)),1)])
+					  #Q.score$`Students score` <- factor(Q.score$`Students score`, levels = Q.score$`Students score`[seq(1,max(1,length(Q.score$`Students score`)),1)])
 					  ggplot(Q.score, aes(x=`Students score`, y=`Number of People`, label=percent(`Percentage`/100))) +
 					    geom_bar(stat = "identity")+ ggtitle("我能將本課程中學到的知識運用在生活中")+
 					    geom_text(aes(y = `Number of People` + 1))+
@@ -631,7 +667,7 @@ shinyServer(function(input, output, session) {
 					  sum<-sum(Q.score[,2])
 					  Q.score<-cbind(Q.score,(Q.score[,2]/sum)*100)
 					  names(Q.score)<-c("Students score","Number of People","Percentage")
-					  Q.score$`Students score` <- factor(Q.score$`Students score`, levels = Q.score$`Students score`[seq(1,max(1,length(Q.score$`Students score`)),1)])
+					  #Q.score$`Students score` <- factor(Q.score$`Students score`, levels = Q.score$`Students score`[seq(1,max(1,length(Q.score$`Students score`)),1)])
 					  ggplot(Q.score, aes(x=`Students score`, y=`Number of People`, label=percent(`Percentage`/100))) +
 					    geom_bar(stat = "identity")+ ggtitle("我能夠自行規劃行銷策略")+
 					    geom_text(aes(y = `Number of People` + 1))+
@@ -644,7 +680,7 @@ shinyServer(function(input, output, session) {
 					  sum<-sum(Q.score[,2])
 					  Q.score<-cbind(Q.score,(Q.score[,2]/sum)*100)
 					  names(Q.score)<-c("Students score","Number of People","Percentage")
-					  Q.score$`Students score` <- factor(Q.score$`Students score`, levels = Q.score$`Students score`[seq(1,max(1,length(Q.score$`Students score`)),1)])
+					  #Q.score$`Students score` <- factor(Q.score$`Students score`, levels = Q.score$`Students score`[seq(1,max(1,length(Q.score$`Students score`)),1)])
 					  ggplot(Q.score, aes(x=`Students score`, y=`Number of People`, label=percent(`Percentage`/100))) +
 					    geom_bar(stat = "identity")+ ggtitle("我能夠進行品牌管理")+
 					    geom_text(aes(y = `Number of People` + 1))+
@@ -657,7 +693,7 @@ shinyServer(function(input, output, session) {
 					  sum<-sum(Q.score[,2])
 					  Q.score<-cbind(Q.score,(Q.score[,2]/sum)*100)
 					  names(Q.score)<-c("Students score","Number of People","Percentage")
-					  Q.score$`Students score` <- factor(Q.score$`Students score`, levels = Q.score$`Students score`[seq(1,max(1,length(Q.score$`Students score`)),1)])
+					  #Q.score$`Students score` <- factor(Q.score$`Students score`, levels = Q.score$`Students score`[seq(1,max(1,length(Q.score$`Students score`)),1)])
 					  ggplot(Q.score, aes(x=`Students score`, y=`Number of People`, label=percent(`Percentage`/100))) +
 					    geom_bar(stat = "identity")+ ggtitle("我認為自己透過觀看影片學習，有不錯的學習效果")+
 					    geom_text(aes(y = `Number of People` + 1))+
@@ -669,7 +705,7 @@ shinyServer(function(input, output, session) {
 					  sum<-sum(Q.score[,2])
 					  Q.score<-cbind(Q.score,(Q.score[,2]/sum)*100)
 					  names(Q.score)<-c("Students score","Number of People","Percentage")
-					  Q.score$`Students score` <- factor(Q.score$`Students score`, levels = Q.score$`Students score`[seq(1,max(1,length(Q.score$`Students score`)),1)])
+					  #Q.score$`Students score` <- factor(Q.score$`Students score`, levels = Q.score$`Students score`[seq(1,max(1,length(Q.score$`Students score`)),1)])
 					  ggplot(Q.score, aes(x=`Students score`, y=`Number of People`, label=percent(`Percentage`/100))) +
 					    geom_bar(stat = "identity")+ ggtitle("我完成課程全部共 3 次的小考 (Quizzes)")+
 					    geom_text(aes(y = `Number of People` + 1))+
@@ -681,7 +717,7 @@ shinyServer(function(input, output, session) {
 					  sum<-sum(Q.score[,2])
 					  Q.score<-cbind(Q.score,(Q.score[,2]/sum)*100)
 					  names(Q.score)<-c("Students score","Number of People","Percentage")
-					  Q.score$`Students score` <- factor(Q.score$`Students score`, levels = Q.score$`Students score`[seq(1,max(1,length(Q.score$`Students score`)),1)])
+					  #Q.score$`Students score` <- factor(Q.score$`Students score`, levels = Q.score$`Students score`[seq(1,max(1,length(Q.score$`Students score`)),1)])
 					  ggplot(Q.score, aes(x=`Students score`, y=`Number of People`, label=percent(`Percentage`/100))) +
 					    geom_bar(stat = "identity")+ ggtitle("我完成課程全部共 3 個互評作業 (Peer Assessment)")+
 					    geom_text(aes(y = `Number of People` + 1))+
@@ -693,7 +729,7 @@ shinyServer(function(input, output, session) {
 					  sum<-sum(Q.score[,2])
 					  Q.score<-cbind(Q.score,(Q.score[,2]/sum)*100)
 					  names(Q.score)<-c("Students score","Number of People","Percentage")
-					  Q.score$`Students score` <- factor(Q.score$`Students score`, levels = Q.score$`Students score`[seq(1,max(1,length(Q.score$`Students score`)),1)])
+					  #Q.score$`Students score` <- factor(Q.score$`Students score`, levels = Q.score$`Students score`[seq(1,max(1,length(Q.score$`Students score`)),1)])
 					  ggplot(Q.score, aes(x=`Students score`, y=`Number of People`, label=percent(`Percentage`/100))) +
 					    geom_bar(stat = "identity")+ ggtitle("我參與每一次的課程討論")+
 					    geom_text(aes(y = `Number of People` + 1))+
@@ -705,7 +741,7 @@ shinyServer(function(input, output, session) {
 					  sum<-sum(Q.score[,2])
 					  Q.score<-cbind(Q.score,(Q.score[,2]/sum)*100)
 					  names(Q.score)<-c("Students score","Number of People","Percentage")
-					  Q.score$`Students score` <- factor(Q.score$`Students score`, levels = Q.score$`Students score`[seq(1,max(1,length(Q.score$`Students score`)),1)])
+					  #Q.score$`Students score` <- factor(Q.score$`Students score`, levels = Q.score$`Students score`[seq(1,max(1,length(Q.score$`Students score`)),1)])
 					  ggplot(Q.score, aes(x=`Students score`, y=`Number of People`, label=percent(`Percentage`/100))) +
 					    geom_bar(stat = "identity")+ ggtitle("我每週都有跟上老師的進度")+
 					    geom_text(aes(y = `Number of People` + 1))+
@@ -717,7 +753,7 @@ shinyServer(function(input, output, session) {
 					  sum<-sum(Q.score[,2])
 					  Q.score<-cbind(Q.score,(Q.score[,2]/sum)*100)
 					  names(Q.score)<-c("Students score","Number of People","Percentage")
-					  Q.score$`Students score` <- factor(Q.score$`Students score`, levels = Q.score$`Students score`[seq(1,max(1,length(Q.score$`Students score`)),1)])
+					  #Q.score$`Students score` <- factor(Q.score$`Students score`, levels = Q.score$`Students score`[seq(1,max(1,length(Q.score$`Students score`)),1)])
 					  ggplot(Q.score, aes(x=`Students score`, y=`Number of People`, label=percent(`Percentage`/100))) +
 					    geom_bar(stat = "identity")+ ggtitle("我覺這是一堂有趣的課")+
 					    geom_text(aes(y = `Number of People` + 1))+
@@ -729,7 +765,7 @@ shinyServer(function(input, output, session) {
 					  sum<-sum(Q.score[,2])
 					  Q.score<-cbind(Q.score,(Q.score[,2]/sum)*100)
 					  names(Q.score)<-c("Students score","Number of People","Percentage")
-					  Q.score$`Students score` <- factor(Q.score$`Students score`, levels = Q.score$`Students score`[seq(1,max(1,length(Q.score$`Students score`)),1)])
+					  #Q.score$`Students score` <- factor(Q.score$`Students score`, levels = Q.score$`Students score`[seq(1,max(1,length(Q.score$`Students score`)),1)])
 					  ggplot(Q.score, aes(x=`Students score`, y=`Number of People`, label=percent(`Percentage`/100))) +
 					    geom_bar(stat = "identity")+ ggtitle("我認為課程內容符合自己一開始的期待")+
 					    geom_text(aes(y = `Number of People` + 1))+
@@ -741,6 +777,8 @@ shinyServer(function(input, output, session) {
 				}
 			},error=function(e){
 				print("QL err")
+			},finally=function(){
+				dbDisconnect(con)
 			})
 
 		}
@@ -1791,19 +1829,19 @@ RunEnvironment <- function(session,input,output,user,selectionlist,rows){
 			      br(),
 			      menuItem("About", icon = icon("commenting"), tabName = "about",
 			      	menuSubItem("Platform", tabName = "a_platform"),
-			      	menuSubItem("Overview", tabName = "a_overview"),
-			      	menuSubItem("Participation", tabName = "a_participation"),
-			      	menuSubItem("Engagement", tabName = "a_engagement"),
-			      	menuSubItem("Discussion", tabName = "a_discussion"),
-			      	menuSubItem("Word Cloud", tabName = "a_wordcloud"),
-			      	menuSubItem("Contact us", tabName = "a_contact"),
-			      	menuSubItem("About us", tabName = "a_us")
+			      	menuSubItem("Overview [總覽)", tabName = "a_overview"),
+			      	menuSubItem("Participation [參與]",  tabName = "a_participation"),
+			      	menuSubItem("Engagement [成績]",  tabName = "a_engagement"),
+			      	menuSubItem("Discussion [論壇]",  tabName = "a_discussion"),
+			      	menuSubItem("Word Cloud [文字雲]",  tabName = "a_wordcloud"),
+			      	menuSubItem("Contact us [聯絡]", tabName = "a_contact"),
+			      	menuSubItem("About us [關於]",  tabName = "a_us")
 			      ),
-			      menuItem("Overview", icon = icon("dashboard"), tabName = "overview"),
-			      menuItem("Participation", icon = icon("area-chart"), tabName = "participation"),
-			      menuItem("Engagement", icon = icon("pencil"), tabName = "engagement"),
-			      menuItem("Discussion", icon = icon("tasks"), tabName = "discussion"),
-			      menuItem("Word Cloud", icon = icon("cloud"), tabName = "wordcloud"),
+			      menuItem("Overview", icon = icon("dashboard"), badgeLabel = "總覽", badgeColor = "black",tabName = "overview"),
+			      menuItem("Participation", icon = icon("area-chart"), badgeLabel = "參與", badgeColor = "black",tabName = "participation"),
+			      menuItem("Engagement", icon = icon("pencil"), badgeLabel = "成績", badgeColor = "black",tabName = "engagement"),
+			      menuItem("Discussion", icon = icon("tasks"), badgeLabel = "論壇", badgeColor = "black",tabName = "discussion"),
+			      menuItem("Word Cloud", icon = icon("cloud"), badgeLabel = "文字雲", badgeColor = "black", tabName = "wordcloud"),
 			      menuItem("Your MOOCs", icon = icon("bookmark"), tabName = "moocs"),
 				  menuItem("Teacher Management",href="http://140.112.107.63:8000",badgeLabel = "link", badgeColor = "green", icon=icon("user")),hr(),
 				  menuItem("Logout", icon=icon("sign-out"))
@@ -2179,18 +2217,20 @@ UIWeb <- function(selectionlist){
                # Use a fluid Bootstrap layout
                fluidPage(
                  tags$head(tags$style( 
-                   type = "text/css",
+                   type = "text/css",HTML(
                    "
                    .container {padding-left: 10px !important; margin-left: 0px !important;}
                    .navbar-nav {margin-left: 20px !important;}
                    .progress-text {position:absolute; top: 70px !important; width:auto !important;}
+                   #Q\\.LearnM\\.o .main-svg {height:540px !important;} 
+                   #Q\\.Background\\.o .main-svg {height:540px !important;} 
                    .shiny-output-error {font-weight: 500; font-size: 16px; color: red;}
                    .shiny-output-error { visibility: hidden; }
                    .shiny-output-error:before { visibility: hidden; }
                     //.box-body{text-align:center;}
                    #busy_on {visibility: hidden;}
                    "
-                 ),tags$script(HTML(
+                 )),tags$script(HTML(
 			      'Shiny.addCustomMessageHandler("myCallbackHandler_alert",
 			        function(m){	
 			        	alert(m);
@@ -2238,11 +2278,13 @@ UIWeb <- function(selectionlist){
 						               $("#course_o").css({"visibility":"visible"});
 						               $("#content_o").css({"visibility":"visible"});
 						               $("#busy_on").css({"visibility":"hidden"});
+						               $("#busy_o").css({"visibility":"hidden"});
 					             	}, 1000);
 				              	}else{
 				              		$("#course_o").css({"visibility":"visible"});
 						            $("#content_o").css({"visibility":"visible"});
 						            $("#busy_on").css({"visibility":"hidden"});
+						            $("#busy_o").css({"visibility":"hidden"});
 						        }
 			               })
 			        });'))),
@@ -2258,59 +2300,91 @@ UIWeb <- function(selectionlist){
          div(id = "busy_o",
              p("Loading Web Content...Please wait...", align = "center")),
          div(id = "content_o",
-             fluidRow(
-             	box(title="Data Range",status="primary",solidHeader = TRUE,
+            
+             	box(title="資料範圍",status="primary",solidHeader = TRUE,
                      #h4(strong(textOutput("DR.o")), align = "left"), br(),
                      h5(textOutput("sday.o"), align = "left"),
                      h5(textOutput("eday.o"), align = "left"),
                      width=3,height=130),
                      #br(),hr(),
-                 box(title="Participation",status="primary",solidHeader = TRUE,
+                 box(title="參與狀況",status="primary",solidHeader = TRUE,
                      #h4(strong(textOutput("SC.o")), align = "left"), br(),
                      h5(textOutput("learner.o"), align = "left"),
                      h5(textOutput("activelearner.o"), align = "left"),
                      width=3,height=130),
                      #br(),hr()
-                box(title="Discussion/Feedback",status="primary",solidHeader = TRUE,
+                box(title="論壇回饋",status="primary",solidHeader = TRUE,
                     #h4(strong(textOutput("DC.o")), align = "left"), br(),
                     h5(textOutput("ques.ans.o"), align = "left"),
                     h5(textOutput("rating.o"), align = "left"),
                     #br(),hr(),
                     width=3,height=130),
-                box(title="Engagement",status="primary",solidHeader = TRUE,
+                box(title="學習成績",status="primary",solidHeader = TRUE,
                     #h4(strong(textOutput("IG.o")), align = "left"), br(),
                     h5(textOutput("pass.o"), align = "left"),
                     h5(textOutput("nonpass.o"), align = "left"),
                     #br(),hr()
-                    width=3,height=130)
-                
-             ), #hr(),
-             box(title="評分回饋",status="primary",solidHeader = TRUE,
-               	plotlyOutput("plotO.rating"), HTML("<br><br><br><br>"),
-               	width=12),
-             box(title="通過項目",status="primary",solidHeader = TRUE,
-             	plotlyOutput("plotO.pass_item"), HTML("<br><br><br><br>"),
-             	width=12),#hr(),
+                    width=3,height=130) , #hr(),
+	            box(title="通過項目",status="primary",solidHeader = TRUE,
+	             	plotlyOutput("plotO.pass_item"), br(),
+	             	width=8),#hr(),
+	       		box(title="評分回饋 [1-5分] [軸標籤代表人數]",status="primary",solidHeader = TRUE,
+	               	plotOutput("plotO.rating"), br(),
+	               	width=4),
+
              div(id="ql",
              	 h3(strong(textOutput("Q.o")), align = "center"),
 	             box(title="學生背景（問卷）",status="primary",solidHeader = TRUE,
 		             fluidRow(column(6,
 		                             plotlyOutput("Q.Gender.o", height = "400px"), br(), br(),
 		                             plotlyOutput("Q.Education.o", height = "400px"), br(), br(),
-		                             plotlyOutput("Q.Know.o", height = "400px")
+		                             plotlyOutput("Q.Know.o", height = "400px"),br(), br(),
+		                             plotlyOutput("Q.Background.o"),br(), br()
 		                             #hr()
+				             ),
+				             column(6,
+				                    
+				                    plotlyOutput("Q.Age.o", height = "400px"), br(), br(),
+				                    plotlyOutput("Q.Employ.o", height = "400px"),br(), br(),
+				                    plotlyOutput("Q.Time.o", height = "400px"),br(), br(),
+				                    plotlyOutput("Q.LearnM.o"),br(), br()
+				                    #hr(),br()
+				             )
 		             ),
+		             
+		             #plotlyOutput("Q.LearnT.o"),br(),
+                     #plotlyOutput("Q.schedule.o"),br(),
+                     br(), br(), br(),br(), br(), hr(),br(), br(),
+                     
+                     column(6,
+			             plotlyOutput("Q.score.o1"),br(),
+			             plotlyOutput("Q.score.o2"),br(),
+			             plotlyOutput("Q.score.o3"),br(),
+			             plotlyOutput("Q.score.o4"),br(),
+			             plotlyOutput("Q.score.o5"),br(),
+			             plotlyOutput("Q.score.o6"),br(),
+			             plotlyOutput("Q.score.o7"),br(),
+			             plotlyOutput("Q.score.o8"),br(),
+			             plotlyOutput("Q.score.o9"),br(),
+			             plotlyOutput("Q.score.o10"),br(),
+			             plotlyOutput("Q.score.o11"),br(),
+			             plotlyOutput("Q.score.o12"),br()
+			          ),
 		             column(6,
-		                    
-		                    plotlyOutput("Q.Age.o", height = "400px"), br(), br(),
-		                    plotlyOutput("Q.Employ.o", height = "400px"),br(), br(),
-		                    plotlyOutput("Q.Time.o", height = "400px")
-		                    #hr(),br()
-		             )
-		             ),
-		             plotlyOutput("Q.Background.o"),br(),br(),br(),
-		             plotlyOutput("Q.LearnM.o"),br(),
-		             plotlyOutput("Q.LearnT.o"),br(),br(),br(),br(),br(),
+			             
+			             plotlyOutput("Q.score.o13"),br(),
+			             plotlyOutput("Q.score.o14"),br(),
+			             plotlyOutput("Q.score.o15"),br(),
+			             plotlyOutput("Q.score.o16"),br(),
+			             plotlyOutput("Q.score.o17"),br(),
+			             plotlyOutput("Q.score.o18"),br(),
+			             plotlyOutput("Q.score.o19"),br(),
+			             plotlyOutput("Q.score.o20"),br(),
+			             plotlyOutput("Q.score.o21"),br(),
+			             plotlyOutput("Q.score.o22"),br(),
+			             plotlyOutput("Q.score.o23"),br(),
+			             plotlyOutput("Q.score.o24"),br()
+			            ),
 		             dataTableOutput('Q.Num.o'),
 	             width=12)
             )
@@ -2323,7 +2397,7 @@ UIWeb <- function(selectionlist){
      # Use a fluid Bootstrap layout
      fluidPage(
        # Give the page a title
-       titlePanel(h2("Participation（訪問）", HTML("<br><br>"), align = "center")),
+       titlePanel(h2("Participation（參與狀況）", HTML("<br><br>"), align = "center")),
        #hr(),
        # Generate a row with a sidebar
        box(title="課程項目選單",status="primary",solidHeader = TRUE,
@@ -2386,7 +2460,7 @@ UIWeb <- function(selectionlist){
   tabItem(tabName = "engagement",
    shinyUI(fluidPage(
      fluidRow(
-       titlePanel(h2("Engagement（評分）",HTML("<br><br>"), align = "center")),
+       titlePanel(h2("Engagement（學習成績）",HTML("<br><br>"), align = "center")),
        #hr(),
       box(title="課程項目選單",status="primary",solidHeader = TRUE, width=3,height="570px",
            selectInput(
@@ -2492,7 +2566,7 @@ UIWeb <- function(selectionlist){
    shinyUI(fluidPage(
      fluidRow(
      	 tags$style(type="text/css","#plotDC.Scatterplot > .main-svg{height:370px !important;}"),
-       titlePanel(h2("Discussion（論壇）",HTML("<br><br>"), align = "center")),
+       titlePanel(h2("Discussion（論壇回饋）",HTML("<br><br>"), align = "center")),
        #hr(),
        box(title="課程項目選單",status="primary",solidHeader = TRUE,
            useShinyjs(),

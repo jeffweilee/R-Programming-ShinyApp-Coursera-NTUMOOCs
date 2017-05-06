@@ -1,4 +1,4 @@
-# <center>Participation 頁面簡介</center>
+# <center>Participation 參與狀況頁面簡介</center>
 <hr>
 
 ## __主要功能__
