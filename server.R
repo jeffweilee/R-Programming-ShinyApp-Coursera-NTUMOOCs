@@ -16,12 +16,11 @@ library(scales)
 library(DT)
 library(mailR)
 library(rmarkdown)
-library(shinydashboard)
 
 if(names(dev.cur())!="null device") dev.off()
 pdf(NULL)
 
-setwd("/srv/shiny-server/app-moocs-test")
+setwd("/srv/shiny-server/app-moocs")
 
 shinyServer(function(input, output, session) {
 
@@ -43,7 +42,7 @@ shinyServer(function(input, output, session) {
 	observe({
 	   if (!USER$Logged) {
 			output$page <- renderUI({
-				div(class = paste(dbi[[1]],dbi[[2]],dbi[[3]]), do.call(bootstrapPage, c("", UILogin())))
+				div(class = "outer", do.call(bootstrapPage, c("", UILogin())))
 			})
 			tryCatch({
 				if (!is.null(input$Login)) {
@@ -90,7 +89,7 @@ shinyServer(function(input, output, session) {
 		courselist <- dbGetQuery(conn = con, statement = paste0("select * from courselist where webUser='",USER$Role,"'"))
 		dbDisconnect(con)
 		n <- nrow(courselist)
-
+		if(n > 0 && nchar(courselist$courseDBName[1]) > 1){
 		# CourseListFirstTimeUI
 		output$page <- renderUI({
 		rows <- lapply(1:n, function (x) {
@@ -122,6 +121,7 @@ shinyServer(function(input, output, session) {
 						USER$selectionlist <- GenSelectionList(con)
 						USER$selectionlist_dff <- isolate(USER$selectionlist)
 						RunEnvironment(session,input,output,USER$Role,USER$selectionlist,rows)
+						
 					} else { # courselist select page inside the app
 						USER$selectionlist_dff <- GenSelectionList(con)
 						if(isSameCourse){ # same course selected, just go to overviw
@@ -142,6 +142,9 @@ shinyServer(function(input, output, session) {
 		# render page
 		div(class = "outer",  do.call(bootstrapPage, UIList(USER$Role, rows)))
 		})
+	   }else{
+	   	  session$sendCustomMessage("myCallbackHandler_alert", "There is no courses yet. Please contact the NTU MOOCs administrator!")
+	   }
 	  }
     })
 
@@ -165,7 +168,7 @@ shinyServer(function(input, output, session) {
 			items <- selectionlist[selectionlist$course_module_id==inp,]
 
 		items <-  items[order(items$course_module_order, items$course_lesson_order,items$course_item_order),]
-		itemIds <- c(c("-1", items[items$course_item_type=="Lecture",]$course_item_id), c("-2", items[items$course_item_type=="Reading",]$course_item_id),  c("-3", items[items$course_item_type=="Graded Assessment",]$course_item_id),  c("-4", items[items$course_item_type=="Assessment",]$course_item_id))
+		itemIds <- c(c(-1, items[items$course_item_type=="Lecture",]$course_item_id), c("-2", items[items$course_item_type=="Reading",]$course_item_id),  c(-3, items[items$course_item_type=="Graded Assessment",]$course_item_id),  c(-4, items[items$course_item_type=="Assessment",]$course_item_id))
 		itemNames <- c("【Lecture】", items[items$course_item_type=="Lecture",]$course_item_name,"【Reading】", items[items$course_item_type=="Reading",]$course_item_name, "【Graded Assessment】", items[items$course_item_type=="Graded Assessment",]$course_item_name, "【Assessment】", items[items$course_item_type=="Assessment",]$course_item_name)
 		itemsList <- setNames(itemIds, itemNames)
 
@@ -173,9 +176,7 @@ shinyServer(function(input, output, session) {
 			if(inp == "All"){
 				updateSelectInput(session,oup,choices = c("Course Overall", "All Items", itemsList[which(itemsList=="-3"):length(itemsList)]))
 			}else{
-				this.itemsList <- itemsList[which(itemsList=="-3"):length(itemsList)]
-				this.itemIds <- itemIds[which(itemsList=="-3"):length(itemsList)]
-				updateSelectInput(session,oup,choices = c(this.itemsList), selected = this.itemIds[grep("^[^-]",this.itemIds)[1]])
+				updateSelectInput(session,oup,choices = c(itemsList[which(itemsList=="-3"):length(itemsList)]), selected = itemIds[2])
 			}
 		} else if(oup == "item.DC"){
 			if(inp == "All")
@@ -188,7 +189,7 @@ shinyServer(function(input, output, session) {
 			else
 				updateSelectInput(session,oup,choices = c("All", itemsList))
 		}else
-			updateSelectInput(session, oup, choices = itemsList, selected = itemIds[grep("^[^-]",itemIds)[1]])
+			updateSelectInput(session, oup, choices = itemsList, selected = itemIds[2])
   	}
 
 	observe({
@@ -235,20 +236,20 @@ shinyServer(function(input, output, session) {
 			output$course_o <- renderText({as.character(dbGetQuery(conn = con, statement = "select `course_name` FROM `courses`"))}) 
 			#sday <- as.character()
 			#eday <- as.character(dbGetQuery(conn = con, statement = "select max(date(course_progress_ts)) FROM `course_progress`"))
-			output$DR.o <- renderText({"Data Range"}) 
+			output$DR.o <- renderText({"Data Range 資料範圍"}) 
 			output$sday.o <- renderText({paste("Start Date:", as.character(dbGetQuery(conn = con, statement = "select min(date(course_progress_ts)) FROM `course_progress`")))}) 
 			output$eday.o <- renderText({paste("End Date:", as.character(dbGetQuery(conn = con, statement = "select max(date(course_progress_ts)) FROM `course_progress`")))}) 
 
-			output$SC.o <- renderText({"Participation"}) 
+			output$SC.o <- renderText({"Participation 參與狀況"}) 
 			output$learner.o <- renderText({paste("Total Learners:", format(dbGetQuery(conn = con, statement = "select count(*) from `users`"), format="d", big.mark=','))}) 
 			output$activelearner.o <- renderText({paste("Active Learners:", format(dbGetQuery(conn = con, statement = "select count(*) from ( SELECT distinct(`taiwan_user_id`) FROM `course_progress` union select distinct(`taiwan_user_id`) from `course_item_grades` union select distinct(`taiwan_discussions_user_id`) from `discussion_answer` union select distinct(`taiwan_discussions_user_id`) from `discussion_question` ) as a"), format="d", big.mark=','))}) 
 			
-			output$IG.o <- renderText({"Engagement"}) 
+			output$IG.o <- renderText({"Engagement 學習成績"}) 
 			output$pass.o <- renderText({paste("Passed Learners:", format(dbGetQuery(conn = con, statement = "select count(*) FROM `course_grades` where course_passing_state_id ='1'"), format="d", big.mark=','))}) 
 			output$nonpass.o <- renderText({paste("Non-passed Learners:", format(dbGetQuery(conn = con, statement = "select count(*) FROM `course_grades` where course_passing_state_id ='0'"), format="d", big.mark=','))}) 
 			
-			output$DC.o <- renderText({"Discussion/Feedback"}) 
-			output$ques.ans.o <- renderText({paste("Questions / Answers:", format(dbGetQuery(conn = con, statement = "select count(*) FROM `discussion_question`"), format="d", big.mark=','), "/", format(dbGetQuery(conn = con, statement = "select count(*) FROM `discussion_answer`"), format="d", big.mark=','))}) 
+			output$DC.o <- renderText({"Discussion/Feedback 論壇回饋"}) 
+			output$ques.ans.o <- renderText({paste("Questions/Answers:", format(dbGetQuery(conn = con, statement = "select count(*) FROM `discussion_question`"), format="d", big.mark=','), "/", format(dbGetQuery(conn = con, statement = "select count(*) FROM `discussion_answer`"), format="d", big.mark=','))}) 
 			
 			output$rating.o <- renderText({
 			  paste("Average Rating:", as.numeric(dbGetQuery(conn = con, statement = paste0("SELECT cast(avg(`feedback_rating`) AS char) FROM `feedback_course_ratings` WHERE `feedback_system`='STAR'"))[[1]]), " (1-5分)")
@@ -266,7 +267,7 @@ shinyServer(function(input, output, session) {
 			      statement = paste0(
 			        "SELECT `feedback_rating`,count(*) as Number FROM `feedback_course_ratings` WHERE `feedback_system`='STAR' GROUP BY `feedback_rating`"))
 			  colnames(rating)<-c("Course Rating","Numbers of Feedback")
-			  seq<-seq(1,5,1)
+			  seq<-seq(1,10,1)
 			  norating<-seq[!seq %in% (rating$`Course Rating`)]
 			  norating<-cbind(norating,rep(0,length(norating)))
 			  colnames(norating)<-c("Course Rating","Numbers of Feedback")
@@ -278,6 +279,37 @@ shinyServer(function(input, output, session) {
 			    geom_text(aes(y = `Numbers of Feedback` + 0.4))
 			  ggplotly()
 			})
+
+			# output$plotO.rating <- renderPlot({
+			# 	onFlushed(function(){
+			# 	    shinyjs::hide("busy_o")
+			# 	    shinyjs::show("course_o")
+			# 		shinyjs::show("content_o")
+			# 	    dbDisconnect(con)
+			#   	}, once = TRUE, session = getDefaultReactiveDomain())
+			# 	# Library
+			# 	library(fmsb)
+			#   	rating <-dbGetQuery(conn = con, statement = paste0(
+			# 	        "SELECT `feedback_rating`,count(*) as Number FROM `feedback_course_ratings` WHERE `feedback_system`='STAR' GROUP BY `feedback_rating`"))
+			#     r <- as.data.frame(rbind(seq(1:5),rep(0,5)))
+			# 	r[2,r[1,] %in% rating[,1]] <- rating[,2]
+			# 	colnames(r) <- r[1,]
+			#     data <- rbind(c(rep(ceiling(max(rating[,2])/10)*10,5)),c(rep(0,5)),r[2,])
+
+			# 	# Custom the radarChart !
+			# 	radarchart( data  , axistype=1 , 
+				            
+			# 	            #custom polygon
+			# 	            pcol=rgb(0.2,0.5,0.5,0.9) , pfcol=rgb(0.2,0.5,0.5,0.5) , plwd=4 , 
+				            
+			# 	            #custom the grid
+			# 	            cglcol="grey", cglty=1, axislabcol="grey", caxislabels=seq(0,20,5), cglwd=0.8,
+				            
+			# 	            #custom labels
+			# 	            vlcex=0.8 
+			# 	)
+			# })
+
 			output$plotO.pass_item <- renderPlotly({
 			  PNP <- dbGetQuery(conn = con, statement = paste0("select d.`course_item_name` as `Item Name`, c.`course_item_passing_state_desc` as `Pass or Not`,c.`count(*)` as NumberOfPeople from (select a.*,b.`course_item_passing_state_desc` from (SELECT `course_item_id`,`course_item_passing_state_id`,count(*) FROM `course_item_grades` group by `course_item_id`, `course_item_passing_state_id`) as a inner join (select * from `course_item_passing_states`) as b on a.`course_item_passing_state_id`=b.`course_item_passing_state_id`) as c inner join (select `course_item_id`,`course_item_name` from `course_items` ) as d on c.`course_item_id`=d.`course_item_id`"))
 			  PNP$`Item Name` <- factor(PNP$`Item Name`, levels=unique(PNP$`Item Name`))
@@ -346,7 +378,7 @@ shinyServer(function(input, output, session) {
 							names(Q.Background)<-c("Students Background","Number of People","Percentage")
 							Q.Background$`Students Background` <- factor(Q.Background$`Students Background`, levels = Q.Background$`Students Background`[seq(1,max(1,length(Q.Background$`Students Background`)),1)])
 							ggplot(Q.Background, aes(x=`Students Background`, y=`Number of People`, label=percent(`Percentage`/100))) +
-							geom_bar(stat = "identity")+ ggtitle("Percentage of Students' Background")+
+							geom_bar(stat = "identity")+ ggtitle("Percentage of Students Background")+
 							geom_text(aes(y = `Number of People` + 1))+
 							theme(axis.text.x = element_text(angle = 45, hjust = 0.5,vjust = 1))
 							ggplotly()
@@ -412,7 +444,7 @@ shinyServer(function(input, output, session) {
 						    names(Q.LearnT)<-c("Students LearnT","Number of People","Percentage")
 						    Q.LearnT$`Students LearnT` <- factor(Q.LearnT$`Students LearnT`, levels = Q.LearnT$`Students LearnT`[seq(1,max(1,length(Q.LearnT$`Students LearnT`)),1)])
 						    ggplot(Q.LearnT, aes(x=`Students LearnT`, y=`Number of People`, label=`Number of People`)) +
-						      geom_bar(stat = "identity")+ ggtitle("Percentage of Students' Learning Time")+
+						      geom_bar(stat = "identity")+ ggtitle("Percentage of Students Learning Time")+
 						      geom_text(aes(y = `Number of People` + 1))+
 						      theme(axis.text.x = element_text(angle = 45, hjust = 0.5,vjust = 1))
 						    ggplotly()
@@ -736,8 +768,7 @@ shinyServer(function(input, output, session) {
 					    theme(axis.text.x = element_text(angle = 0, hjust = 1,vjust = 0.5))
 					  ggplotly()
 					})
-				}else{
-                    session$sendCustomMessage("myCallbackHandler_hide", "#content_o > #ql")
+					
 				}
 			},error=function(e){
 				print("QL err")
@@ -1343,7 +1374,6 @@ shinyServer(function(input, output, session) {
 			  DA.module<-cbind(DA.module,A)
 			  DA.module<-na.omit(DA.module)
 
-
 			  # colume names reassign 
 			  colnames(DA.module)<-c("discussion_question_id","course_item_id","course_module_id","Date","Content Detail","Number","Type" )
 			  colnames(DQ.module)<-c("discussion_question_id","course_item_id","course_module_id","Date","Content Detail","Number","Type" )
@@ -1354,14 +1384,13 @@ shinyServer(function(input, output, session) {
 			  Level<- rep("",nrow(DC.module))
 			  DC.module<-cbind(DC.module,Level)
 			  DC.module<-na.omit(DC.module)
-			  
 
-			  DA.module<-na.omit(DA.module)
+
+
 			  DC.module$Level<-as.character(DC.module$Level)
 			  DC.module[DC.module$course_item_id=="",]$Level<-"Module"
 			  DC.module[DC.module$Level=="",]$Level<-"Item"
 			  #fill in the NULL???item_id with the ones in module_id
-
 			  DC.module$course_item_id[DC.module$course_item_id==""]<-DC.module[DC.module$course_item_id=="",]$course_module_id
 			  DC.module$Number[is.na(DC.module$Number)] <- 0
 			  # Clean Content
@@ -1389,6 +1418,7 @@ shinyServer(function(input, output, session) {
 			  return(list("DC" = DC, "DQ.module" = DQ.module, "DA.module" = DA.module))
 			}
 
+
 			output$plotDC.Circlizeplot <- renderPlot({
 				 con <- dbConnect(
 					MySQL(),
@@ -1414,6 +1444,8 @@ shinyServer(function(input, output, session) {
 				chordDiagram(as.data.frame(dat), transparency = 0.5)
 			})
 
+
+
 			output$plotDC.Scatterplot <- renderPlotly({
 			  
 			  onFlush(function(){shinyjs::hide("busy.DC")}, once = TRUE, session = getDefaultReactiveDomain())
@@ -1425,7 +1457,6 @@ shinyServer(function(input, output, session) {
 			    DA.module <- funcDCReturn$DA.module
 			  },error = function(e) {
 			    conditionMessage(e)
-			    #session$sendCustomMessage("myCallbackHandler_alert", as.character(e))
 			    print("DC err")
 			    output$msg.DC <- renderText({"No Valid Data"}) 
 			    shinyjs::hide("busy.DC")
@@ -1458,34 +1489,29 @@ shinyServer(function(input, output, session) {
 			  # print(nrow(head(DC[order(-DC$Number),],50)))
 			  # print(DC.plot)
 			  
-			  tryCatch({
+			  
 			  # Calculate Std. by question_id
-				  qids <- unique(DC.plot$Question_id)
-				  qids.std <- data.frame()
-				  for (i in 1:length(qids)) {
-				    ans <- DC.plot[DC.plot$Question_id == qids[i] & DC.plot$Type == "Answer", ]
-				    ques <- DC.plot[DC.plot$Question_id == qids[i] & DC.plot$Type == "Question", ]
-				    ans <- ans[order(ans$Date),]
-				    
-				    if(nrow(ans)>2)
-				      std.inter <- sd(as.Date(ans$Date[2:nrow(ans)])-as.Date(ans$Date[1:nrow(ans)-1]))
-				    else
-				      std.inter <- 0
-				    
-				    std <- sd(as.Date(ans$Date)- as.Date(ques$Date))
-				    if(is.na(std)) std <- 0
-				    
-				    qids.std <- rbind(qids.std, c(qids[i], std, std.inter), stringsAsFactors = FALSE)
-				  }
-	 
-				  colnames(qids.std) <- c("Question_id", " Standard Deviation of Response Day from Question", " Standard Deviation of InterResponse Day")
-				  qids.std <- qids.std[order(qids.std$Question_id),]
-				  qids.std.plot <- melt(qids.std, id.vars=c("Question_id"))
-
-			   },error = function(e) {
-			    conditionMessage(e)
-			    #session$sendCustomMessage("myCallbackHandler_alert", as.character(e))
-			  })
+			  qids <- unique(DC.plot$Question_id)
+			  qids.std <- data.frame()
+			  for (i in 1:length(qids)) {
+			    ans <- DC.plot[DC.plot$Question_id == qids[i] & DC.plot$Type == "Answer", ]
+			    ques <- DC.plot[DC.plot$Question_id == qids[i] & DC.plot$Type == "Question", ]
+			    ans <- ans[order(ans$Date),]
+			    
+			    if(nrow(ans)>2)
+			      std.inter <- sd(as.Date(ans$Date[2:nrow(ans)])-as.Date(ans$Date[1:nrow(ans)-1]))
+			    else
+			      std.inter <- 0
+			    
+			    std <- sd(as.Date(ans$Date)- as.Date(ques$Date))
+			    if(is.na(std)) std <- 0
+			    
+			    qids.std <- rbind(qids.std, c(qids[i], std, std.inter), stringsAsFactors = FALSE)
+			  }
+			  
+			  colnames(qids.std) <- c("Question_id", " Standard Deviation of Response Day from Question", " Standard Deviation of InterResponse Day")
+			  qids.std <- qids.std[order(qids.std$Question_id),]
+			  qids.std.plot <- melt(qids.std, id.vars=c("Question_id"))
 			  
 			  output$plotDC.Scatterplot.Std <- renderPlotly({
 			    #validate(need(!all(is.na(qids.std$Sd) == T) && input$item.DC != "-1", "No Enough Data to Calculate SD"))
@@ -1518,7 +1544,7 @@ shinyServer(function(input, output, session) {
 			    ggplotly(tooltip = c("Question_id", "value"))
 			  })
 			  
-			
+			  
 			  DC.4DT <- rbind(DQ.module,DA.module)
 			  if(input$module.DC == "All"){
 			    if (input$item.DC != "All Items")
@@ -1572,8 +1598,7 @@ shinyServer(function(input, output, session) {
 			  )
 			  
 			  ggplot(data = DC.plot,
-			         aes(Date,Question_id , a=Level, shape=`Type`, color = Number, b=Content)) +
-			    theme(legend.position="bottom",legend.box="horizontal")+
+			         aes(Date,Question_id , a=Level,shape=`Type`, color = Number, b=Content)) +
 			    scale_shape_manual(values=c(3, 0, 16))+
 			    geom_point(size = 2) +
 			    scale_colour_gradientn(colours = c("red","blue","darkblue"))+
@@ -1605,12 +1630,13 @@ shinyServer(function(input, output, session) {
 			  shinyjs::show("sub.WC")
 			})
 
-			path <- "/srv/shiny-server/app-moocs-test/data/"
+			path <- "/srv/shiny-server/app-moocs/data/"
 			all.D.dir <- paste0(path,USER$courseDBName,"_allD.txt")
 			all.F.dir <- paste0(path,USER$courseDBName,"_allF.txt")
 			all.O.dir <- paste0(path,USER$courseDBName,"_allO.txt")
 			data.dir <- c(all.D.dir, all.F.dir, all.O.dir)
 			names(data.dir) <- c("D", "F", "O")
+
 
 			 observeEvent(input$recal, {
 			   js_string <- 'confirm("Are you sure to recalculate word frequency?\\n It may take 2~5 minutes to do so!!!");'
@@ -1639,13 +1665,15 @@ shinyServer(function(input, output, session) {
 			output$plot.WC <- renderPlot({
 				onFlush(function(){shinyjs::hide("busy.WC")}, once = TRUE, session = getDefaultReactiveDomain())
 				#wcId <- ifelse(input$item.WC=="", input$module.WC, ifelse(input$item.WC=="All", input$module.WC, input$item.WC))
+
 				con <- dbConnect(
 					MySQL(),
 					user = dbi.user,
 					password = dbi.password,
 					host = dbi.host,
 					dbname = USER$courseDBName
-			    )
+				)
+
 				wcId <- input$module.WC
 				terms <- reactive({
 				# ...but not for anything else
@@ -1653,21 +1681,18 @@ shinyServer(function(input, output, session) {
 				tryCatch({
 					withProgress({
 					setProgress(message = "Processing corpus...")
-					 context <- as.character(read.table(data.dir["F"], fileEncoding = "utf8")[1,1])
-					 getTermMatrix(wcId,data.dir,path,USER$courseDBName, con)
-
+					getTermMatrix(wcId,data.dir,path,USER$courseDBName,con)
 				})},error=function(e){
 					print("WC err")
-					session$sendCustomMessage("myCallbackHandler_alert", as.character(e))
 					output$msg.WC <- renderText({"No Valid Data"}) 
 					shinyjs::hide("sub.WC")
 					shinyjs::hide("busy.WC")
 					shinyjs::show("msg.WC")
-				},finally=dbDisconnect(con))
+				})
 
 				#})
 				})
-
+			  
 			  validate(need(length(terms()) > 1,"No Data"))
 			  
 			  	if (length(terms()) > 1) {
@@ -1745,14 +1770,14 @@ shinyServer(function(input, output, session) {
 			    observe({
 			      shinyjs::enable("downloadData.WC.WF")
 			      shinyjs::enable("downloadData.WC.C")
-			      if(USER$Role!="a"){
+			      #if(USER$Role!="a"){
 			      	shinyjs::hide("clean")
 			      	shinyjs::hide("recal")
-			      }
-			      else{
-			      	shinyjs::enable("clean")
-			      	shinyjs::enable("recal")
-			      }
+			      #}
+			      #else{
+			      # shinyjs::enable("clean")
+			      #	shinyjs::enable("recal")
+			      #}
 			    })
 			  }
 			})
@@ -1780,66 +1805,10 @@ shinyServer(function(input, output, session) {
 #################
 RunEnvironment <- function(session,input,output,user,selectionlist,rows){
 	output$page <- renderUI({
-		div(class = "outer", dashboardPage(
-		    dashboardHeader(
-			    title="臺大慕課 NTU MOOCs"
-			    #titleWidth = 230
-			 ),
-			 dashboardSidebar(
-			    sidebarMenu(
-			      #menuItem("Dashboard", icon = icon("dashboard"), tabName = "dashboard"),
-			      br(),
-			      menuItem("About", icon = icon("commenting"), tabName = "about",
-			      	menuSubItem("Platform", tabName = "a_platform"),
-			      	menuSubItem("Overview", tabName = "a_overview"),
-			      	menuSubItem("Participation", tabName = "a_participation"),
-			      	menuSubItem("Engagement", tabName = "a_engagement"),
-			      	menuSubItem("Discussion", tabName = "a_discussion"),
-			      	menuSubItem("Word Cloud", tabName = "a_wordcloud"),
-			      	menuSubItem("Contact us", tabName = "a_contact"),
-			      	menuSubItem("About us", tabName = "a_us")
-			      ),
-			      menuItem("Overview", icon = icon("dashboard"), tabName = "overview"),
-			      menuItem("Participation", icon = icon("area-chart"), tabName = "participation"),
-			      menuItem("Engagement", icon = icon("pencil"), tabName = "engagement"),
-			      menuItem("Discussion", icon = icon("tasks"), tabName = "discussion"),
-			      menuItem("Word Cloud", icon = icon("cloud"), tabName = "wordcloud"),
-			      menuItem("Your MOOCs", icon = icon("bookmark"), tabName = "moocs"),
-				  menuItem("Teacher Management",href="http://140.112.107.63:8000",badgeLabel = "link", badgeColor = "green", icon=icon("user")),hr(),
-				  menuItem("Logout", icon=icon("sign-out"))
-				),conditionalPanel(
-				      condition = "false",
-				      selectInput("load","load",list())
-				)
-			  ), 
-			dashboardBody(
-				HTML("<script src='AdminLTE-2.0.6/app.js'></script>"),
-				tags$script(HTML('
-					$("body").addClass("skin-blue"); 
-					$(".sidebar-toggle").click(function(){
-						if($("body").hasClass("sidebar-collapse")){$("body").removeClass("sidebar-collapse")}
-						else{$("body").addClass("sidebar-collapse")}  
-						
-						if($("body").hasClass("sidebar-open")){$("body").removeClass("sidebar-open")}
-						else{$("body").addClass("sidebar-open")}  
-
-						}); 
-					$(".fa-angle-left").toggleClass("fa-angle-down"); $(".content").css("min-height","900px"); 
-					setTimeout(function(){$("section > ul > li:nth-child(2) > a").click();},700); 
-					$("section > ul > li:nth-child(2) > ul > li:nth-child(1) > a").click(); 
-					$("section > ul > li:nth-last-child(1) > a").click(function(){alert(\'Logout!\');location.reload(true);});')),
-				tags$style(HTML('hr{background-color:darkgrey; color:darkgrey; height:1px;} 
-					li > a > span{margin-left:5px;} 
-					.sidebar-toggle{height:50px;} 
-					.main-header .logo {font-size:14px; /*margin-left:-30px; width:290px;*/ } 
-					.main-sidebar{font-size:14px;width:230px;} .main-header > .navbar{height:50px;}')),
-				  
-				       UIWeb(selectionlist)
-				  
-		    )
-		))
+		div(class = "outer", do.call(navbarPage, c(
+		inverse = TRUE, title = "NTU MOOCs", UIWeb(selectionlist)
+		)))
 	})
-
 	output$inCourseList <- renderUI({
 		div(class = "outer",  do.call(bootstrapPage, UIList(user, rows)))
 	})
@@ -1962,11 +1931,12 @@ getTermMatrix <- function(inp,data.dir,path,courseDBName,con) {
   # print(as.Date(file.info(list.files(path=path, pattern=paste0(isolate(USER$courseDBName),"_allD.txt"), full.names=TRUE))$mtime))
   # if(Sys.Date()-as.Date(file.info(list.files(path=path, pattern=paste0(courseDBName,"_allD.txt"), full.names=TRUE))$mtime) > 30)
   # writewordFreq(data.dir,con)
+  
   dbGetQuery(conn = con, "SET NAMES 'utf8'")
   # data explorer tab
   context <- ""
   if(inp == "D"){
-    context <- as.character(read.table(data.dir["D"], fileEncoding = "utf8",blank.lines.skip=TRUE)[1,1])
+    context <- as.character(read.table(data.dir["D"], fileEncoding = "utf8")[1,1])
     DT.context <- dbGetQuery(conn = con, "(SELECT b.discussion_question_title, b.discussion_question_details, a.`discussion_answer_content` FROM `discussion_answer` a left join `discussion_question` b on a.`discussion_question_id` = b.`discussion_question_id`) UNION (SELECT b.discussion_question_title, b.discussion_question_details, a.`discussion_answer_content` FROM `discussion_answer` a right join `discussion_question` b on a.`discussion_question_id` = b.`discussion_question_id`)")
     # context <- dbGetQuery(conn = con,"(SELECT `discussion_answer_content` FROM `discussion_answer`) UNION (SELECT `discussion_question_title` FROM `discussion_question`) UNION (SELECT `discussion_question_details` FROM `discussion_question`)")
     # DC <- func.DC()$DC
@@ -1975,16 +1945,15 @@ getTermMatrix <- function(inp,data.dir,path,courseDBName,con) {
     # context <- paste(DC[DC$Question_id %in% top.Q,9],collapse=" ")
     # context <- ifelse(nchar(context)>1500,substr(context,1,1500),context)
   }else if(inp == "F"){
-    context <- as.character(read.table(data.dir["F"], fileEncoding = "utf8",blank.lines.skip=TRUE)[1,1])
+    context <- as.character(read.table(data.dir["F"], fileEncoding = "utf8")[1,1])
     DT.context <- dbGetQuery(conn = con,"(SELECT b.`course_item_name` as `Name`, a.`feedback_category`, a.`feedback_text` FROM `feedback_item_comments` a, `course_items` b where a.`course_item_id` = b.`course_item_id`) UNION (SELECT b.`course_name` as `Name`, a.`feedback_category`, a.`feedback_text` FROM `feedback_course_comments` a, `courses` b where a.`course_id` = b.`course_id`)")
     #context <- dbGetQuery(conn = con,"(SELECT `feedback_text` FROM `feedback_item_comments`) UNION (SELECT `feedback_text` FROM `feedback_course_comments`)")
   }else if(inp == "A"){
-  	context <- ""
+    context <- ""
   	context <- paste(try(as.character(read.table(data.dir["D"], fileEncoding = "utf8",blank.lines.skip=TRUE)[1,1])),context)
   	context <- paste(try(as.character(read.table(data.dir["F"], fileEncoding = "utf8",blank.lines.skip=TRUE)[1,1]),context))
   	context <- paste(try(as.character(read.table(data.dir["O"], fileEncoding = "utf8",blank.lines.skip=TRUE)[1,1]),context))
-
-    DT.context <- dbGetQuery(conn = con, "(SELECT b.discussion_question_title, b.discussion_question_details, a.`discussion_answer_content` FROM `discussion_answer` a left join `discussion_question` b on a.`discussion_question_id` = b.`discussion_question_id`) UNION (SELECT b.discussion_question_title, b.discussion_question_details, a.`discussion_answer_content` FROM `discussion_answer` a right join `discussion_question` b on a.`discussion_question_id` = b.`discussion_question_id`) UNION (SELECT b.`course_item_name` as `Name`, a.`feedback_category`, a.`feedback_text` FROM `feedback_item_comments` a, `course_items` b where a.`course_item_id` = b.`course_item_id`) UNION (SELECT b.`course_name` as `Name`, a.`feedback_category`, a.`feedback_text` FROM `feedback_course_comments` a, `courses` b where a.`course_id` = b.`course_id`)")
+	DT.context <- dbGetQuery(conn = con, "(SELECT b.discussion_question_title, b.discussion_question_details, a.`discussion_answer_content` FROM `discussion_answer` a left join `discussion_question` b on a.`discussion_question_id` = b.`discussion_question_id`) UNION (SELECT b.discussion_question_title, b.discussion_question_details, a.`discussion_answer_content` FROM `discussion_answer` a right join `discussion_question` b on a.`discussion_question_id` = b.`discussion_question_id`) UNION (SELECT b.`course_item_name` as `Name`, a.`feedback_category`, a.`feedback_text` FROM `feedback_item_comments` a, `course_items` b where a.`course_item_id` = b.`course_item_id`) UNION (SELECT b.`course_name` as `Name`, a.`feedback_category`, a.`feedback_text` FROM `feedback_course_comments` a, `courses` b where a.`course_id` = b.`course_id`)")
     # context <- dbGetQuery(conn = con,"(SELECT `discussion_answer_content` FROM `discussion_answer`) UNION
     # (SELECT `discussion_question_title` FROM `discussion_question`) UNION (SELECT `discussion_question_details` FROM `discussion_question`) UNION
     # (SELECT `feedback_text` FROM `feedback_item_comments`) UNION (SELECT `feedback_text` FROM `feedback_course_comments`)")
@@ -1998,6 +1967,7 @@ getTermMatrix <- function(inp,data.dir,path,courseDBName,con) {
     DT.context <- dbGetQuery(conn = con, paste0("(SELECT b.discussion_question_title, b.discussion_question_details, a.`discussion_answer_content` FROM `discussion_answer` a left join `discussion_question` b on a.`discussion_question_id` = b.`discussion_question_id` where a.`discussion_question_id`in ( select `discussion_question_id` from `discussion_question` where `course_item_id`= '", inp,"' or `course_module_id`='", inp,"')) UNION (SELECT b.discussion_question_title, b.discussion_question_details, a.`discussion_answer_content` FROM `discussion_answer` a right join `discussion_question` b on a.`discussion_question_id` = b.`discussion_question_id` where a.`discussion_question_id`in ( select `discussion_question_id` from `discussion_question` where `course_item_id`= '", inp,"' or `course_module_id`='", inp,"'))"))
     #context <- dbGetQuery(conn = con, paste0("(SELECT `discussion_answer_content` FROM `discussion_answer` where `discussion_question_id`in ( select `discussion_question_id` from `discussion_question` where `course_item_id`= '", inp,"' or `course_module_id`='", inp,"') ) UNION (SELECT `discussion_question_title` FROM `discussion_question` where `course_item_id`= '", inp,"' or `course_module_id`='", inp,"') UNION (SELECT `discussion_question_details` FROM `discussion_question` where `course_item_id`= '", inp,"' or `course_module_id`='", inp,"')"))
   }
+  dbDisconnect(con)
   
   if(nchar(context)>3){
     DT.context[,2] <- gsub("(<co-content>|<text>|<text/>|</text>|</co-content>|\\n)", "", DT.context[,2])
@@ -2031,31 +2001,31 @@ calwordFreq <- function(context, mode){
 }
 
 
-#writewordFreq <- function(data.dir,con, modulesList){
+writewordFreq <- function(data.dir,con){
   # Discussion
-#  allcontext.D <- ""
-#  for(inp in modulesList){
-#    context.D <- dbGetQuery(conn = con, paste0("(SELECT `discussion_answer_content` FROM `discussion_answer` where `discussion_question_id`in ( select `discussion_question_id` from `discussion_question` where `course_item_id`= '", inp,"' or `course_module_id`='", inp,"') ) UNION (SELECT `discussion_question_title` FROM `discussion_question` where `course_item_id`= '", inp,"' or `course_module_id`='", inp,"') UNION (SELECT `discussion_question_details` FROM `discussion_question` where `course_item_id`= '", inp,"' or `course_module_id`='", inp,"')"))
-#    if(nchar(context.D)>2){
-#      currcontext.D <- calwordFreq(context.D,T)
-#      allcontext.D <- paste(allcontext.D, currcontext.D)
-#      write.table(currcontext.D, paste0(path,courseDBName,"_",inp,".txt"), fileEncoding = "utf8", row.names = F, col.names = F)
-#    }
-#a  }
- # write.table(allcontext.D, data.dir["D"], fileEncoding = "utf8", row.names = F, col.names = F)
+  allcontext.D <- ""
+  for(inp in modulesList){
+    context.D <- dbGetQuery(conn = con, paste0("(SELECT `discussion_answer_content` FROM `discussion_answer` where `discussion_question_id`in ( select `discussion_question_id` from `discussion_question` where `course_item_id`= '", inp,"' or `course_module_id`='", inp,"') ) UNION (SELECT `discussion_question_title` FROM `discussion_question` where `course_item_id`= '", inp,"' or `course_module_id`='", inp,"') UNION (SELECT `discussion_question_details` FROM `discussion_question` where `course_item_id`= '", inp,"' or `course_module_id`='", inp,"')"))
+    if(nchar(context.D)>2){
+      currcontext.D <- calwordFreq(context.D,T)
+      allcontext.D <- paste(allcontext.D, currcontext.D)
+      write.table(currcontext.D, paste0(path,courseDBName,"_",inp,".txt"), fileEncoding = "utf8", row.names = F, col.names = F)
+    }
+  }
+  write.table(allcontext.D, data.dir["D"], fileEncoding = "utf8", row.names = F, col.names = F)
   
   # Feedback
- # context.F <- dbGetQuery(conn = con,"(SELECT `feedback_text` FROM `feedback_item_comments`) UNION (SELECT `feedback_text` FROM `feedback_course_comments`)")
- # if(nchar(context.F)>2)
- #   write.table(calwordFreq(context.F,T), data.dir["F"], fileEncoding = "utf8", row.names = F, col.names = F)
+  context.F <- dbGetQuery(conn = con,"(SELECT `feedback_text` FROM `feedback_item_comments`) UNION (SELECT `feedback_text` FROM `feedback_course_comments`)")
+  if(nchar(context.F)>2)
+    write.table(calwordFreq(context.F,T), data.dir["F"], fileEncoding = "utf8", row.names = F, col.names = F)
   
   # Others
- # context.O <- dbGetQuery(conn = con, paste0("(SELECT `discussion_answer_content` FROM `discussion_answer` where `discussion_question_id`in ( select `discussion_question_id` from `discussion_question` where LENGTH(`course_item_id`)= 0 and LENGTH(`course_module_id`)=0) ) UNION (SELECT `discussion_question_title` FROM `discussion_question` where LENGTH(`course_item_id`)= 0 and LENGTH(`course_module_id`)=0) UNION (SELECT `discussion_question_details` FROM `discussion_question` where LENGTH(`course_item_id`)= 0 and LENGTH(`course_module_id`)=0)"))
- # if(nchar(context.O)>2)
- #   write.table(calwordFreq(context.O,T), data.dir["O"], fileEncoding = "utf8", row.names = F, col.names = F)
+  context.O <- dbGetQuery(conn = con, paste0("(SELECT `discussion_answer_content` FROM `discussion_answer` where `discussion_question_id`in ( select `discussion_question_id` from `discussion_question` where LENGTH(`course_item_id`)= 0 and LENGTH(`course_module_id`)=0) ) UNION (SELECT `discussion_question_title` FROM `discussion_question` where LENGTH(`course_item_id`)= 0 and LENGTH(`course_module_id`)=0) UNION (SELECT `discussion_question_details` FROM `discussion_question` where LENGTH(`course_item_id`)= 0 and LENGTH(`course_module_id`)=0)"))
+  if(nchar(context.O)>2)
+    write.table(calwordFreq(context.O,T), data.dir["O"], fileEncoding = "utf8", row.names = F, col.names = F)
   
- # dbDisconnect(con)
-#}
+  dbDisconnect(con)
+}
 
 ##########
 # UI LOGIN
@@ -2063,12 +2033,12 @@ calwordFreq <- function(context, mode){
 UILogin <- function() {
 	tagList(
 		tags$head(
-			tags$style(type = "text/css", "#foot{text-align:center; position:relative; bottom:5px;} #login {width:300px; font-size:14px; text-align:center; position:absolute; top:35%; left:50%; margin-top:-100px; margin-left:-150px;}")
+			tags$style(type = "text/css", "#foot{text-align:center; position:relative; bottom:5px;} #login {width:325px; font-size:14px; text-align:center; position:absolute; top:35%; left:50%; margin-top:-100px; margin-left:-150px;}")
 		),
 	  div(
 	    id = "login",
 	    wellPanel(
-	      h3("NTU MOOCs 臺大慕課", align = "center"),
+	      h3("NTU MOOCs ", align = "center"),
 	     	# h4("Data Analytics Platform", align = "center"),
 	      br(),br(),
 	      textInput("userName", "Username"),
@@ -2080,7 +2050,7 @@ UILogin <- function() {
 	      HTML("<h6>Don't have an account? <a href='http://140.112.107.63:8000/accounts/signup' target='_blank'>Sign Up Here!</a></h6>"),
 	      HTML("<h6><a href='http://140.112.107.63:8000/' target='_blank'>Teacher Management System </a></h6>"),
 	      #h6("NTU MOOCs @ 2017 / 建議使用 Chrome 瀏覽器"),
-	      h6("NTU MOOCs TEST @ 2017"),
+	      h6("NTU MOOCs @ 2017"),
 	      html(html="</center>")
 	    )
 	  )#,
@@ -2101,27 +2071,25 @@ UIList <- function(user, rows) {
 	if(is.null(user)) user <- ""
 	tagList(
 	  tags$head(
-			tags$style(type = "text/css", ".action-button{word-break: break-all; min-width:320px;} #foot{text-align:center; position:relative; bottom:5px;} #weblist {text-align:center;margin-top:30px;} hr{background-color:darkgrey; color:darkgrey; height:2px;}"), 
+			tags$style(type = "text/css", ".action-button{word-break: break-all; min-width:320px;} #foot{text-align:center; position:relative; bottom:5px;} #weblist {text-align:center;}"), 
 			tags$script('Shiny.addCustomMessageHandler("myCallbackHandler_uiList", function(typeMessage) {alert(typeMessage);})')
 		),    
 		div(
 			id = "weblist",
-			h2("NTU MOOCs 臺大慕課", align = "center"),hr(),
-			#wellPanel(
+			h2("NTU MOOCs ", align = "center"),
+			wellPanel(
 			  # h4("Data Analytics Platform", align = "center"),
 			  br(),br(),
-			  #h4(paste0("Hello ", user, "!  Here is your NTU MOOC(s)"), align = "center"),hr(), br(),
-			  h4(paste0(user, " 教授您好！ 以下是您的 NTU MOOCs 臺大慕課："), align = "center"), br(),
-			  #box(status="primary",solidHeader = FALSE, height="100%",
+			  h4(paste0("Hello Prof. ", user, ".  Here is your NTU MOOCs"), align = "center"),hr(),
+			  br(),
 			  rows
-			  #)
-	  	    #)
+	  	)
 		),
 		div(
 			id="foot",
 			html(html="<center>"),
 			h6("NTU MOOCs @ 2017"),
-			#h6("Powered By ShinyR"),
+			h6("Powered By ShinyR"),
 			html(html="</center>")
 			
 		)
@@ -2143,25 +2111,25 @@ UIWeb <- function(selectionlist){
   dlist <-  unique(selectionlist[order(selectionlist$course_module_order), c(2, 4)])
   modulesList <- setNames(dlist$course_module_id, dlist$course_module_name)
 #modulesList <- ""
-
-  return(tabItems(
-  	tabItem(tabName = "a_platform",
-  		shinyUI(fluidPage(column(12, includeMarkdown("about/aboutPlatform.md"))))),
-  	tabItem(tabName = "a_overview",
-  		shinyUI(fluidPage(column(12, includeMarkdown("about/aboutOverview.md"))))),
-  	tabItem(tabName = "a_participation",
-  		shinyUI(fluidPage(column(12, includeMarkdown("about/aboutParticipation.md"))))),
-  	tabItem(tabName = "a_engagement",
-  		shinyUI(fluidPage(column(12, includeMarkdown("about/aboutEngagement.md"))))),
-  	tabItem(tabName = "a_discussion",
-  		shinyUI(fluidPage(column(12, includeMarkdown("about/aboutDiscussion.md"))))),
-  	tabItem(tabName = "a_wordcloud",
-  		shinyUI(fluidPage(column(12, includeMarkdown("about/aboutWordcloud.md"))))),
-  	tabItem(tabName = "a_contact",
-  		shinyUI(fluidPage(
-  			column(12, align="center",
+  tagList(
+      tabPanel("ABOUT",
+           shinyUI(fluidPage(
+            #titlePanel(HTML("<h1><center>About</center></h1>")),
+      tags$head(tags$style("body{font-size:18px;}")),
+            navlistPanel(widths = c(2, 10),
+              HTML("<b>INTRODUCTION</b>"),
+              tabPanel("  About the platform", column(1), column(11, includeMarkdown("about/aboutPlatform.md"))),
+              HTML("<b>MANUAL</b>"),
+              tabPanel("  Overview", column(1), column(11, includeMarkdown("about/aboutOverview.md"))),
+              tabPanel("  Participation", column(1), column(11, includeMarkdown("about/aboutParticipation.md"))),
+              tabPanel("  Engagement", column(1), column(11, includeMarkdown("about/aboutEngagement.md"))),
+              tabPanel("  Discussion", column(1), column(11, includeMarkdown("about/aboutDiscussion.md"))),
+              tabPanel("  Word cloud", column(1), column(11, includeMarkdown("about/aboutWordcloud.md"))),
+              HTML("<b>FEEDBACK</b>"),
+              tabPanel("  Contact us", fluidRow(
+                column(12, align="center",
                        titlePanel(h1(
-                         "Contact us 聯絡我們", align = "center"
+                         "Contact us", align = "center"
                        )),
                        hr(), tags$head(tags$style("#contactBody{margin-left:-150px;}")),
                        #HTML("<h4><i>We would like to hear your voice. Please let us know where and what to improve!</i></h4> <br><br>"),
@@ -2169,52 +2137,40 @@ UIWeb <- function(selectionlist){
                        selectInput("contactSection", "My comment is about:", width = "600px", choices = c("The platform", "Overview", "Participation", "Engagement", "Discussion", "Wordcloud", "Others")),
                        textAreaInput("contactBody", "", "", placeholder="We would like to hear your voice. Please let us know what to improve!", width = "600px", height="250px"),
                        actionButton("btnContactUs","Submit", width = "595px", onclick="alert('謝謝您的寶貴的建議！Thanks for your valuable comment! We will look into it!'); setTimeout(function(){$('#contactBody').val('');},1000)")
-             )
-  	 	))),
-  	tabItem(tabName = "a_us",
-  		shinyUI(fluidPage(column(1), column(10, includeMarkdown("about/aboutUs.md"))))),
+                )
+              )),
+              tabPanel("  About us", column(1), column(11, includeMarkdown("about/aboutUs.md")))#,
+              #tabPanel("FAQ", column(1), column(11, includeMarkdown("aboutFAQ.md")))
+            )
+          ))
+  ),
 
-    tabItem(tabName = "overview",
+    tabPanel('OVERVIEW',
              shinyUI(
                # Use a fluid Bootstrap layout
                fluidPage(
                  tags$head(tags$style( 
                    type = "text/css",
-                   "
-                   .container {padding-left: 10px !important; margin-left: 0px !important;}
+                   ".container {padding-left: 10px !important; margin-left: 0px !important;}
                    .navbar-nav {margin-left: 20px !important;}
                    .progress-text {position:absolute; top: 70px !important; width:auto !important;}
                    .shiny-output-error {font-weight: 500; font-size: 16px; color: red;}
                    .shiny-output-error { visibility: hidden; }
                    .shiny-output-error:before { visibility: hidden; }
-                    //.box-body{text-align:center;}
                    #busy_on {visibility: hidden;}
                    "
-                 ),tags$script(HTML(
-			      'Shiny.addCustomMessageHandler("myCallbackHandler_alert",
-			        function(m){	
-			        	alert(m);
-			        });
-			       Shiny.addCustomMessageHandler("myCallbackHandler_hide",
-			        function(path){
-			        		$(path).hide()
-			        });
-			       Shiny.addCustomMessageHandler("myCallbackHandler_show",
-			        function(path){
-			        		$(path).show()
-			        });
-			       Shiny.addCustomMessageHandler("myCallbackHandler_visible",
-			        function(path){
-			        		$(path).css("visibility","visible");
-			        });
-			       Shiny.addCustomMessageHandler("myCallbackHandler_sameCourse",
+                 ),tags$script(
+			      'Shiny.addCustomMessageHandler("myCallbackHandler_sameCourse",
 			        function(m){$("a:contains(OVERVIEW)").click(); //alert("overview~"+m);
 			        });
+			       Shiny.addCustomMessageHandler("myCallbackHandler_alert",
+			        function(m){	alert(m);
+			        });
+
                    Shiny.addCustomMessageHandler("myCallbackHandler_diffCourse",
 		               function(typeMessage) {
 			         	   //alert(typeMessage);
-			               // $("a:contains(OVERVIEW)").click();
-			               $("section > ul > li:nth-child(3) > a").click();
+			                $("a:contains(OVERVIEW)").click();
 			               // document.getElementById("course_o").style.visibility = "hidden";
 			               // document.getElementById("content_o").style.visibility = "hidden";
 			               // document.getElementById("busy_on").style.visibility = "visible";
@@ -2238,95 +2194,102 @@ UIWeb <- function(selectionlist){
 						               $("#course_o").css({"visibility":"visible"});
 						               $("#content_o").css({"visibility":"visible"});
 						               $("#busy_on").css({"visibility":"hidden"});
-					             	}, 1000);
+					             	}, 7000);
 				              	}else{
 				              		$("#course_o").css({"visibility":"visible"});
 						            $("#content_o").css({"visibility":"visible"});
 						            $("#busy_on").css({"visibility":"hidden"});
 						        }
 			               })
-			        });'))),
+			        });')),
        # Give the page a title
        titlePanel(h3(textOutput("course_o"), align = "center")),
-       #hr(),
+       hr(),
        # Generate a row with a sidebar
-
+       sidebarLayout(sidebarPanel(helpText(HTML(
+         paste(h4(strong("NTU MOOCs Data Analytics Platform"),align="center"),
+               hr(),
+               "The NTU MOOCs data analytics platform aims at deriving insights from the data provided by Coursera.",
+               br(),
+               "Our purpose is to aid NTU MOOCs related persons to have a different aspect of view of the courses.",
+               hr(),
+               "NTU MOOCs @ 2017",
+               sep = "<br>")
+       )),
+       width = 3),
        # Create a spot for the barplot
-       #mainPanel(
+       mainPanel(
          div(id = "busy_on",
              p("Loading New Web Content...Please wait...", align = "center")),
          div(id = "busy_o",
              p("Loading Web Content...Please wait...", align = "center")),
          div(id = "content_o",
-             fluidRow(
-             	box(title="Data Range",status="primary",solidHeader = TRUE,
-                     #h4(strong(textOutput("DR.o")), align = "left"), br(),
-                     h5(textOutput("sday.o"), align = "left"),
-                     h5(textOutput("eday.o"), align = "left"),
-                     width=3,height=130),
-                     #br(),hr(),
-                 box(title="Participation",status="primary",solidHeader = TRUE,
-                     #h4(strong(textOutput("SC.o")), align = "left"), br(),
-                     h5(textOutput("learner.o"), align = "left"),
-                     h5(textOutput("activelearner.o"), align = "left"),
-                     width=3,height=130),
-                     #br(),hr()
-                box(title="Discussion/Feedback",status="primary",solidHeader = TRUE,
-                    #h4(strong(textOutput("DC.o")), align = "left"), br(),
+             fluidRow(column(6,
+                             h4(strong(textOutput("DR.o")), align = "left"), br(),
+                             h5(textOutput("sday.o"), align = "left"),
+                             h5(textOutput("eday.o"), align = "left"),
+                             br(),hr(),
+                             h4(strong(textOutput("SC.o")), align = "left"), br(),
+                             h5(textOutput("learner.o"), align = "left"),
+                             h5(textOutput("activelearner.o"), align = "left"),
+                             br(),hr()
+             ),
+             column(6,
+                    h4(strong(textOutput("DC.o")), align = "left"), br(),
                     h5(textOutput("ques.ans.o"), align = "left"),
                     h5(textOutput("rating.o"), align = "left"),
-                    #br(),hr(),
-                    width=3,height=130),
-                box(title="Engagement",status="primary",solidHeader = TRUE,
-                    #h4(strong(textOutput("IG.o")), align = "left"), br(),
+                    br(),hr(),
+                    h4(strong(textOutput("IG.o")), align = "left"), br(),
                     h5(textOutput("pass.o"), align = "left"),
                     h5(textOutput("nonpass.o"), align = "left"),
-                    #br(),hr()
-                    width=3,height=130)
-                
-             ), #hr(),
-             box(title="評分回饋",status="primary",solidHeader = TRUE,
-               	plotlyOutput("plotO.rating"), HTML("<br><br><br><br>"),
-               	width=12),
-             box(title="通過項目",status="primary",solidHeader = TRUE,
-             	plotlyOutput("plotO.pass_item"), HTML("<br><br><br><br>"),
-             	width=12),#hr(),
-             div(id="ql",
-             	 h3(strong(textOutput("Q.o")), align = "center"),
-	             box(title="學生背景（問卷）",status="primary",solidHeader = TRUE,
-		             fluidRow(column(6,
-		                             plotlyOutput("Q.Gender.o", height = "400px"), br(), br(),
-		                             plotlyOutput("Q.Education.o", height = "400px"), br(), br(),
-		                             plotlyOutput("Q.Know.o", height = "400px")
-		                             #hr()
-		             ),
-		             column(6,
-		                    
-		                    plotlyOutput("Q.Age.o", height = "400px"), br(), br(),
-		                    plotlyOutput("Q.Employ.o", height = "400px"),br(), br(),
-		                    plotlyOutput("Q.Time.o", height = "400px")
-		                    #hr(),br()
-		             )
-		             ),
-		             plotlyOutput("Q.Background.o"),br(),br(),br(),
-		             plotlyOutput("Q.LearnM.o"),br(),
-		             plotlyOutput("Q.LearnT.o"),br(),br(),br(),br(),br(),
-		             dataTableOutput('Q.Num.o'),
-	             width=12)
-            )
+                    br(),hr())
+             ),
+             plotlyOutput("plotO.rating"), HTML("<br><br><hr><br><br>"),
+             plotlyOutput("plotO.pass_item"), HTML("<br><br><hr><br><br>"),
+             
+             h3(strong(textOutput("Q.o")), align = "center"),
+             fluidRow(column(6,
+                             plotlyOutput("Q.Gender.o", height = "400px"), br(), br(),
+                             plotlyOutput("Q.Education.o", height = "400px"), br(), br(),
+                             plotlyOutput("Q.Know.o", height = "400px"),
+                             
+                             hr()
+             ),
+             column(6,
+                    
+                    plotlyOutput("Q.Age.o", height = "400px"), br(), br(),
+                    plotlyOutput("Q.Employ.o", height = "400px"),br(), br(),
+                    plotlyOutput("Q.Time.o", height = "400px"),
+                    hr(),br()
+             )
+             ),
+             plotlyOutput("Q.Background.o"),br(),br(),br(),
+             plotlyOutput("Q.LearnM.o"),br(),
+             plotlyOutput("Q.LearnT.o"),br(),
+             plotlyOutput("Q.schedule.o"),br(),
+             plotlyOutput("Q.score.o1"),br(),
+             plotlyOutput("Q.score.o2"),br(),
+             plotlyOutput("Q.score.o3"),br(),
+             plotlyOutput("Q.score.o4"),br(),
+             plotlyOutput("Q.score.o5"),br(),
+             br(),br(),br(),br(),
+             dataTableOutput('Q.Num.o'),hr()
+             
+         )
        )
-       ))),
+       )))),
 
-  tabItem(tabName = "participation",
+  tabPanel('PARTICIPATION',
    # Define the overall UI
    shinyUI(
      # Use a fluid Bootstrap layout
      fluidPage(
        # Give the page a title
-       titlePanel(h2("Participation（訪問）", HTML("<br><br>"), align = "center")),
-       #hr(),
+       titlePanel(h2("Participation", align = "center")),
+       hr(),
        # Generate a row with a sidebar
-       box(title="課程項目選單",status="primary",solidHeader = TRUE,
+       sidebarLayout(
+         sidebarPanel(
            selectInput(
              "module.SC",
              "Modules",
@@ -2339,56 +2302,54 @@ UIWeb <- function(selectionlist){
              choices = c(),
              selected = ""
            ),
-           #hr(),
+           hr(),
            helpText(HTML(
-             paste(
-             	   #"Source: NTU MOOCs",
-                   #"*Modules（課程單元）",
-                   #"*Item（課程項目）",
-                   "*W4 代表 Week4, etc.",
+             paste("Source: NTU MOOCs",
+                   "*W4 means Week4, etc.",
                    " ",
                    sep = "<br>")
            )),
-		width=3, height = "480px"),
-
-	    tags$head(
-	        tags$style(type="text/css",
-	           "#plotSC.Histogram{visibility:inherit !important;}
-	           #plotSC.Scatterplot > .main-svg{height:421px !important;}
-	           .selectize-dropdown-content{max-height:400px;}"
-	        )
-	      ),
-
+           tags$head(
+             tags$style(type="text/css",
+               "#plotSC.Histogram{visibility:inherit !important;}
+               .main-svg{height:421px !important;}
+               .selectize-dropdown-content{max-height:400px;}"
+             )
+            ),
+           width = 3
+             ),
          # Create a spot for the barplot
-
+         mainPanel(
            h5(textOutput("msg.SC"), align = "center"),
            div(id = "busy.SC",
                p("Calculation in progress...", align = "center")),
            div(
              id = "sub.SC",
-             box(title="課程項目參與人數（開始 & 離開）",status="primary",solidHeader = TRUE,
-            	 plotlyOutput("plotSC.Histogram", height = "400px",width="auto"),
-             width=9, height = "480px"),
-             br(),
-	         box(title="課程項目參與人數資料",status="primary",solidHeader = TRUE,width=12,
-	             HTML("<br><br>"),
-	             div(style="display: inline-block;vertical-align:top;width:220px;",downloadButton('downloadData.SC', 'Download DataTable')),
-	             div(style="display: inline-block;vertical-align:top;width:600px;",radioButtons(
-	               "radioBtn.SC",
-	               "Data Encoding:",
-	               c("UTF-8 (For English-based operation System)" = "UTF-8", "BIG 5 (For Chinese-based operation System)" = "BIG5")
-	             )),
-	             HTML("<br><br>"),
-             	DT::dataTableOutput("DT.SC")) 
+             plotlyOutput("plotSC.Histogram", height = "400px", width="900px"),
+             #plotlyOutput("AggByBoxPlotDay"),
+             #plotlyOutput("AggByBoxPlotMorning"),
+             HTML("<br><br><hr>"),
+             div(style="display: inline-block;vertical-align:top;width:220px;",downloadButton('downloadData.SC', 'Download DataTable')),
+             div(style="display: inline-block;vertical-align:top;width:600px;",radioButtons(
+               "radioBtn.SC",
+               "Data Encoding:",
+               c("UTF-8 (For English-based operation System)" = "UTF-8", "BIG 5 (For Chinese-based operation System)" = "BIG5")
+             )),
+             HTML("<br><br><br>"),
+             DT::dataTableOutput("DT.SC")
+           )
+         )
+         
            )
          )
      )),
-  tabItem(tabName = "engagement",
+  tabPanel('ENGAGEMENT',
    shinyUI(fluidPage(
      fluidRow(
-       titlePanel(h2("Engagement（評分）",HTML("<br><br>"), align = "center")),
-       #hr(),
-      box(title="課程項目選單",status="primary",solidHeader = TRUE, width=3,height="570px",
+       titlePanel(h2("Lesson Engagement", align = "center")),
+       hr(),
+       sidebarLayout(
+         sidebarPanel(
            selectInput(
              "module.IG",
              "Modules",
@@ -2401,10 +2362,9 @@ UIWeb <- function(selectionlist){
              choices = c(),
              selected = ""
            ),
-           #hr(),
+           hr(),
            helpText(HTML(paste(
-             #"Source: NTU MOOCs",
-             "*趨勢線:"," 表現資料的線性走勢，判別變數(學習時間)與應變數(成績)之間是正相關(正斜率)或是負相關(負斜率)",
+             "Source: NTU MOOCs",
              " ",
              sep = "<br>"
            ))),
@@ -2425,76 +2385,71 @@ UIWeb <- function(selectionlist){
                z-index: 105;
                }
                "
-         ))),
+             )
+             ),
+           width = 3
+             ),
          #mainPanel(scatterD3Output("gdt1"))
-         
+         mainPanel(
            withMathJax(),
            h5(textOutput("msg.IG"), align = "center"),
-          
+           div(id = "busy.IG",
+               p("Calculation in progress...", align = "center")),
            div(
              id = "sub.IG",
-             box(title="學習時間與成績",status="primary",solidHeader = TRUE, div(id = "busy.IG",
-               p("Calculation in progress...", align = "center")),
-	             plotlyOutput("plotIG.Scatterplot", height ="350px",width="auto"),
-             #HTML("<hr>"),
-             checkboxInput('txt.IG_visible', width="900px", 'Trendline 趨勢線', value = FALSE),
+             plotlyOutput("plotIG.Scatterplot", height =
+                            "350px", width = "900px"),
+             HTML("<hr>"),
+             checkboxInput('txt.IG_visible', width="900px", 'Trendline Equations *趨勢線表現資料的線性走勢，判別變數(學習時間)與應變數(成績)之間是正相關(正斜率)或是負相關(負斜率)', value = FALSE),
              uiOutput("txt.IG"),
-	         width=9, height="570px"),
-
-             #HTML("<hr>"),
-             box(title="通過狀態與成績",status="primary",solidHeader = TRUE,
-             	plotlyOutput("plotIG.Boxplot.Q", height ="350px"),
-             	width=12, height="100%"),
-             #HTML("<hr><br><br>"),
-
-             box(title="國籍與成績",status="primary",solidHeader = TRUE,
-	             sliderInput(
-	               "slider.sd.D.IG",
-	               "Standard Deviation Filter:",
-	               min = 0,
-	               max = 1,
-	               value = 0.3,
-	               step = 0.01
-	             ),
-	             plotlyOutput("plotIG.Boxplot.D", height ="400px"), #, width="780px"
-	         width=12, height="100%"),
-             
-             #HTML("<hr><br><br>"),
-
-             box(title="語言與成績",status="primary",solidHeader = TRUE,
-	             sliderInput(
-	               "slider.sd.L.IG",
-	               "Standard Deviation Filter:",
-	               min = 0,
-	               max = 1,
-	               value = 0.3,
-	               step = 0.01
-	             ),
-	             plotlyOutput("plotIG.Boxplot.L", height ="400px"),
-	         width=12, height="100%"),  
+             HTML("<hr>"),
+             plotlyOutput("plotIG.Boxplot.Q", height =
+                            "350px"),
+             HTML("<hr><br><br>"),
+             sliderInput(
+               "slider.sd.D.IG",
+               "Standard Deviation Filter:",
+               min = 0,
+               max = 1,
+               value = 0.3,
+               step = 0.01
+             ),
+             plotlyOutput("plotIG.Boxplot.D", height =
+                            "400px"),
              #, width="780px"
-             #HTML("<br><br><br><hr>"),
-
-             box(title="學習時間與成績資料",status="primary",solidHeader = TRUE,width=12,
-	             br(),
-	             	div(style="display: inline-block;vertical-align:top;width:220px;", downloadButton('downloadData.IG', 'Download DataTable')),
-	             div(style="display: inline-block;vertical-align:top;width:600px;", radioButtons(
-	               "radioBtn.IG",
-	               "Data Encoding:",
-	               c("UTF-8 (For English-based operation System)" = "UTF-8", "BIG 5 (For Chinese-based operation System)" = "BIG5")
-	             )),
-	             HTML("<br><br>"),
-	             DT::dataTableOutput('DT.IG'))
+             HTML("<hr><br><br>"),
+             sliderInput(
+               "slider.sd.L.IG",
+               "Standard Deviation Filter:",
+               min = 0,
+               max = 1,
+               value = 0.3,
+               step = 0.01
+             ),
+             plotlyOutput("plotIG.Boxplot.L", height =
+                            "400px"),
+             #, width="780px"
+             HTML("<br><br><br><hr>"),
+             div(style="display: inline-block;vertical-align:top;width:220px;", downloadButton('downloadData.IG', 'Download DataTable')),
+             div(style="display: inline-block;vertical-align:top;width:100%;", radioButtons(
+               "radioBtn.IG",
+               "Data Encoding:",
+               c("UTF-8 (For English-based operation System)" = "UTF-8", "BIG 5 (For Chinese-based operation System)" = "BIG5")
+             )),
+             HTML("<br><br><br>"),
+             DT::dataTableOutput('DT.IG')
+           )
+         )
        ))
          ))),
 
-  tabItem(tabName = "discussion",
+  tabPanel('DISCUSSION',
    shinyUI(fluidPage(
      fluidRow(
-     	 tags$style(type="text/css","#plotDC.Scatterplot > .main-svg{height:370px !important;}"),
-       titlePanel(h2("Discussion（論壇）",HTML("<br><br>"), align = "center")),
-       #hr(),
-       box(title="課程項目選單",status="primary",solidHeader = TRUE,
+       titlePanel(h2("Discussion", align = "center")),
+       hr(),
+       sidebarLayout(
+         sidebarPanel(
            useShinyjs(),
            selectInput(
              "module.DC",
@@ -2507,89 +2462,77 @@ UIWeb <- function(selectionlist){
                        choices = c(),
                        selected = ""),
            checkboxInput('plot.DC_top30', 'Only Show Top 30 Discussions', TRUE),
-           #hr(),
+           hr(),
            helpText(HTML(paste(
-             #"Source: NTU MOOCs",
-             "*右圖中每一筆橫列代表課程論壇的一個問題與該問題的回應",
+             "Source: NTU MOOCs",
              " ",
              sep = "<br>"
            ))),
-           width = 3, height="430px"
+           width = 3
          ),
          
          #mainPanel(scatterD3Output("gdt1"))
+         mainPanel(
            withMathJax(),
            h5(textOutput("msg.DC"), align = "center"),
            div(
              id = "sub.DC",
-             box(title="問答時序與熱絡度",status="primary",solidHeader = TRUE,
-	             div(id = "busy.DC",
-	                 p("Calculation in progress...", align = "center")),
-	             plotlyOutput("plotDC.Scatterplot", height ="350px",width="auto"),
-	          width = 9, height="430px"),
-             HTML("<br>"),
-             textOutput("summary.DC"),
-             HTML("<br><hr>"),
-
-
-	         box(title="前幾名活躍學生人數",status="primary",solidHeader = TRUE,
-	           useShinyjs(),
-	           sliderInput(
+             div(id = "busy.DC",
+                 p("Calculation in progress...", align = "center")),
+             plotlyOutput("plotDC.Scatterplot", height ="350px", width = "900px"),br(),br(),hr(),br(),
+             
+	         HTML("<center><h3>學生回答活躍貢獻度</h3></center>"),
+	         helpText(HTML(paste( 
+	           	 "",
+	             "*下圖中 User(學生) 與 Q(問題) 的連線代表該學生回答了該問題，連線越粗代表回答該題次數越多",
+	             "",
+	             sep = "<br>"
+	           ))),
+	         sliderInput(
 	             "slider.max.activeStudents",
 	             "Number of Active Students",
 	             min = 1,
 	             max = 10,
 	             value = 5
-	           ),
-	           helpText(HTML(paste( 
-	           	 "",
-	             "*右圖中 User(學生) 與 Q(問題) 的連線代表該學生回答了該問題，連線越粗代表回答該題次數越多",
-	             "",
-	             sep = "<br>"
-	           ))),
-	           width = 3, height="660px"
 	         ),
-             box(title="學生回答活躍貢獻度",status="primary",solidHeader = TRUE,
-	             plotOutput("plotDC.Circlizeplot", height ="600px",width="600px"),
-	          width = 9, height="660px"),
+             plotOutput("plotDC.Circlizeplot", height ="600px",width="600px"),
+             HTML("<br>"),
+             textOutput("summary.DC"),
              HTML("<br><hr>"),
-             
-
-			 box(title="問答間隔標準差",status="primary",solidHeader = TRUE,
-	             sliderInput(
-	               "slider.sd.DC",
-	               "Standard Deviation Filter:",
-	               min = 0,
-	               max = 10,
-	               value = 3,
-	               step = 0.5
-	             ),
-	             plotlyOutput("plotDC.Scatterplot.Std", width ="85%"),
-	             width = 12, height="100%"), 
-	         box(title="課程項目選單",status="primary",solidHeader = TRUE,
-	             br(),
-	             div(style="display: inline-block;vertical-align:top;width:220px;", downloadButton('downloadData.DC', 'Download DataTable')),
-	             div(style="display: inline-block;vertical-align:top;width:600px;",radioButtons(
-	               "radioBtn.DC",
-	               "Data Encoding:",
-	               c("UTF-8 (For English-based operation System)" = "UTF-8", "BIG 5 (For Chineses-based operation System)" = "BIG5")
-	             )),
-	             HTML("<br><br>"),
-	             DT::dataTableOutput('DT.DC'),
-	             width = 12, height="100%")
+             sliderInput(
+               "slider.sd.DC",
+               "Standard Deviation Filter:",
+               min = 0,
+               max = 10,
+               value = 3,
+               step = 0.5
+             ),
+             plotlyOutput("plotDC.Scatterplot.Std", width =
+                            "85%"),
+             HTML("<br><hr>"),
+             div(style="display: inline-block;vertical-align:top;width:220px;", downloadButton('downloadData.DC', 'Download DataTable')),
+             div(style="display: inline-block;vertical-align:top;width:600px;",radioButtons(
+               "radioBtn.DC",
+               "Data Encoding:",
+               c("UTF-8 (For English-based operation System)" = "UTF-8", "BIG 5 (For Chineses-based operation System)" = "BIG5")
+             )),
+             HTML("<br><br><br>"),
+             DT::dataTableOutput('DT.DC')
            )
+         )
        )
      )
-   )),
+   ))),
 
-  tabItem(tabName = "wordcloud",
+  tabPanel('WORD-CLOUD',
    shinyUI(fluidPage(
      fluidRow(
        titlePanel(h2(
-         "Word Cloud（文字雲）", HTML("<br><br>"), align = "center"
+         "Word Cloud", align = "center"
        )),
-       #hr(),
-       box(title="課程項目選單",status="primary",solidHeader = TRUE,
+       hr(),
+       sidebarLayout(
+         sidebarPanel(
            useShinyjs(),
            selectInput(
              "module.WC",
@@ -2606,7 +2549,7 @@ UIWeb <- function(selectionlist){
            # selectInput("item.WC",
            #             "Items",
            #             choices = c()),
-           #hr(),
+           hr(),
            # sliderInput("freq",
            #             "Minimum Frequency:",
            #             min = 1,  max = 50, value = 15),
@@ -2620,11 +2563,9 @@ UIWeb <- function(selectionlist){
            hr(),
            actionButton("recal", "Recal"),
            actionButton("clean", "Clean"),
-           br(),
            helpText(HTML(paste(
-             #"Source: NTU MOOCs",
-             #"*Processing time of the wordcloud : 3~5 sec.",
-              "*產生文字雲約需 3~5 秒",
+             "Source: NTU MOOCs",
+             "*Processing time of the wordcloud : 3~5 sec.",
              sep = "<br>"
            ))),
            tags$head(
@@ -2638,53 +2579,56 @@ UIWeb <- function(selectionlist){
                      Shiny.onInputChange("deleteConfirmChoice_clean",eval(message.value));});
               '))
            ),
-           width = 3, height="460px"
+           width = 3
          ),
          
          # Show Word Cloud
-         
+         mainPanel(
            h5(textOutput("msg.WC"), align = "center"),
-           
+           div(id = "busy.WC",
+               p("Rendering... (3~5 seconds)", align = "center")),
            div(
              id = "sub.WC",
-             box(title="文字雲",status="primary",solidHeader = TRUE,
-             	div(id = "busy.WC",p("Rendering... (3~5 seconds)", align = "center")),
-             	plotOutput("plot.WC") ,width = 9, height="460px"
+             plotOutput("plot.WC"),
+             HTML("<br><br><hr><center><h3>Word Freq Table</h3></center>"),
+             downloadButton('downloadData.WC.WF', 'Download Word Freqency'),
+             HTML("<br><br>"),
+             div(style="display: inline-block;vertical-align:top;width:600px;",
+             	radioButtons(
+               "radioBtn.WC",
+               "Data Encoding:",
+               c("UTF-8 (For English-based operation system)" = "UTF-8", "BIG 5 (For Chinese-based operation system)" = "BIG5")
+             )),
+             HTML("<br><br><br>"),
+             DT::dataTableOutput('DT.WC.WordFreq'),
+             HTML(
+               "<br><br><hr><center><h3>Original Content Table</h3></center>"
              ),
-            box(title="關鍵字次數表",status="primary",solidHeader = TRUE,
-	             HTML("<center><h3>Word Freq Table</h3></center>"),
-	             br(),
-	             div(style="display: inline-block;vertical-align:top;width:220px;",downloadButton('downloadData.WC.WF', 'Download Word Freqency')),
-	             div(style="display: inline-block;vertical-align:top;width:600px;",
-	             	radioButtons(
-	               "radioBtn.WC",
-	               "Data Encoding:",
-	               c("UTF-8 (For English-based operation system)" = "UTF-8", "BIG 5 (For Chinese-based operation system)" = "BIG5")
-	             )),
-	             HTML("<br><br>"),
-	             DT::dataTableOutput('DT.WC.WordFreq'), 
-	             width = 12, height="100%"),
-
-            box(title="原始內容",status="primary",solidHeader = TRUE,
-	             HTML("<center><h3>Original Content Table</h3></center>"),
-	             br(),
-	             div(style="display: inline-block;vertical-align:top;width:220px;",downloadButton('downloadData.WC.C', 'Download Text Content')),
-	              div(style="display: inline-block;vertical-align:top;width:600px;",
-	              	radioButtons(
-	               "radioBtn.WF",
-	               "Data Encoding:",
-	               c("UTF-8 (For English-based operation system)" = "UTF-8", "BIG 5 (For Chinese-based operation system)" = "BIG5")
-	             )),
-	             HTML("<br><br>"),
-	             DT::dataTableOutput('DT.WC.Content'),
-	           width = 12, height="100%")
+             downloadButton('downloadData.WC.C', 'Download Text Content'),
+             HTML("<br><br>"),
+              div(style="display: inline-block;vertical-align:top;width:600px;",
+              	radioButtons(
+               "radioBtn.WF",
+               "Data Encoding:",
+               c("UTF-8 (For English-based operation system)" = "UTF-8", "BIG 5 (For Chinese-based operation system)" = "BIG5")
+             )),
+             HTML("<br><br><br>"),
+             DT::dataTableOutput('DT.WC.Content')
            )
          )
+       )
+     )
    ))),
 
 
-    tabItem(tabName = "moocs" ,shinyUI(fluidPage(
-      fluidRow(htmlOutput("inCourseList")))))
+    tabPanel("YOUR MOOCs" ,shinyUI(fluidPage(
+      fluidRow(htmlOutput("inCourseList"))))),
+
+    conditionalPanel(
+      condition = "false",
+      selectInput("load","load",list())
+    ),
+    tabPanel(actionButton("logout", "Logout", style="min-width:60px !important;margin:-10px !important;", onclick='alert("Logout!");location.reload(true)'))
+
   )
-)
 }
