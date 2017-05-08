@@ -217,6 +217,26 @@ shinyServer(function(input, output, session) {
 		}
 	})
 
+	####################
+	# Email Feedback
+	####################
+	observeEvent(input$btnContactUs, {
+    if(!is.null(input$contactBody) && !is.na(input$contactBody)){
+      content <- paste("<html><b>USER:<b><br>", USER$Role, "@ntu.edu.tw <br><br><b>Course:<b><br>", USER$courseDBName, "<br><br><b>Section:<b><br>", input$contactSection, 
+      					"<br><br><b>Content:<b><br>", input$contactBody, "</html>")
+      updateTextInput(session, "contactBody", value = "")
+      send.mail(from = "ntu.cpcp@gmail.com",
+                to = c("r04725023@ntu.edu.tw"),#, "r04725009@ntu.edu.tw") #, "r05725007@ntu.edu.tw", "r05725028@ntu.edu.tw"),
+                subject = paste0("NTU MOOCs 意見回饋-", USER$Role ,"-",USER$courseDBName, "-", input$contactSection),
+                html = TRUE,
+                body = content,
+                encoding = "utf-8",
+                smtp = list(host.name = "smtp.gmail.com", port = 465, user.name = "ntu.cpcp", passwd = "lckung413", ssl = T),
+                authenticate = T,
+                send = TRUE)
+	   }
+	})
+
 	########################################	#######
 	########################################	##	 ##
 	# Overview 									##	 ##
