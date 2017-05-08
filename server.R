@@ -235,24 +235,45 @@ shinyServer(function(input, output, session) {
 			output$course_o <- renderText({as.character(dbGetQuery(conn = con, statement = "select `course_name` FROM `courses`"))}) 
 			#sday <- as.character()
 			#eday <- as.character(dbGetQuery(conn = con, statement = "select max(date(course_progress_ts)) FROM `course_progress`"))
+
 			output$DR.o <- renderText({"Data Range"}) 
-			output$sday.o <- renderText({paste("Start Date:", as.character(dbGetQuery(conn = con, statement = "select min(date(course_progress_ts)) FROM `course_progress`")))}) 
-			output$eday.o <- renderText({paste("End Date:", as.character(dbGetQuery(conn = con, statement = "select max(date(course_progress_ts)) FROM `course_progress`")))}) 
+			output$sday.o <- renderText({paste("開始時間:", as.character(dbGetQuery(conn = con, statement = "select min(date(course_progress_ts)) FROM `course_progress`")))}) 
+			output$eday.o <- renderText({paste("結束時間:", as.character(dbGetQuery(conn = con, statement = "select max(date(course_progress_ts)) FROM `course_progress`")))}) 
 
 			output$SC.o <- renderText({"Participation"}) 
-			output$learner.o <- renderText({paste("Total Learners:", format(dbGetQuery(conn = con, statement = "select count(*) from `users`"), format="d", big.mark=','))}) 
-			output$activelearner.o <- renderText({paste("Active Learners:", format(dbGetQuery(conn = con, statement = "select count(*) from ( SELECT distinct(`taiwan_user_id`) FROM `course_progress` union select distinct(`taiwan_user_id`) from `course_item_grades` union select distinct(`taiwan_discussions_user_id`) from `discussion_answer` union select distinct(`taiwan_discussions_user_id`) from `discussion_question` ) as a"), format="d", big.mark=','))}) 
+			output$learner.o <- renderText({paste("全部人數:", format(dbGetQuery(conn = con, statement = "select count(*) from `users`"), format="d", big.mark=','))}) 
+			output$activelearner.o <- renderText({paste("活躍人數:", format(dbGetQuery(conn = con, statement = "select count(*) from ( SELECT distinct(`taiwan_user_id`) FROM `course_progress` union select distinct(`taiwan_user_id`) from `course_item_grades` union select distinct(`taiwan_discussions_user_id`) from `discussion_answer` union select distinct(`taiwan_discussions_user_id`) from `discussion_question` ) as a"), format="d", big.mark=','))}) 
 			
 			output$IG.o <- renderText({"Engagement"}) 
-			output$pass.o <- renderText({paste("Passed Learners:", format(dbGetQuery(conn = con, statement = "select count(*) FROM `course_grades` where course_passing_state_id ='1'"), format="d", big.mark=','))}) 
-			output$nonpass.o <- renderText({paste("Non-passed Learners:", format(dbGetQuery(conn = con, statement = "select count(*) FROM `course_grades` where course_passing_state_id ='0'"), format="d", big.mark=','))}) 
+			output$pass.o <- renderText({paste("通過人數:", format(dbGetQuery(conn = con, statement = "select count(*) FROM `course_grades` where course_passing_state_id ='1'"), format="d", big.mark=','))}) 
+			output$nonpass.o <- renderText({paste("未通過人數:", format(dbGetQuery(conn = con, statement = "select count(*) FROM `course_grades` where course_passing_state_id ='0'"), format="d", big.mark=','))}) 
 			
-			output$DC.o <- renderText({"Discussion/Feedback"}) 
-			output$ques.ans.o <- renderText({paste("Questions / Answers:", format(dbGetQuery(conn = con, statement = "select count(*) FROM `discussion_question`"), format="d", big.mark=','), "/", format(dbGetQuery(conn = con, statement = "select count(*) FROM `discussion_answer`"), format="d", big.mark=','))}) 
-			
+			output$DC.o <- renderText({"Discussion/Feedback "}) 
+			output$ques.ans.o <- renderText({paste("問題回答:", format(dbGetQuery(conn = con, statement = "select count(*) FROM `discussion_question`"), format="d", big.mark=','), "/", format(dbGetQuery(conn = con, statement = "select count(*) FROM `discussion_answer`"), format="d", big.mark=','))}) 
 			output$rating.o <- renderText({
-			  paste("Average Rating:", as.numeric(dbGetQuery(conn = con, statement = paste0("SELECT cast(avg(`feedback_rating`) AS char) FROM `feedback_course_ratings` WHERE `feedback_system`='STAR'"))[[1]]), " (1-5分)")
+			  paste("平均評價:", as.numeric(dbGetQuery(conn = con, statement = paste0("SELECT cast(avg(`feedback_rating`) AS char) FROM `feedback_course_ratings` WHERE `feedback_system`='STAR'"))[[1]]), " (1-5分)")
 			}) 
+
+			# output$DR.o <- renderText({"Data Range"}) 
+			# output$sday.o <- renderText({paste("Start Date 開始時間:", as.character(dbGetQuery(conn = con, statement = "select min(date(course_progress_ts)) FROM `course_progress`")))}) 
+			# output$eday.o <- renderText({paste("End Date 結束時間:", as.character(dbGetQuery(conn = con, statement = "select max(date(course_progress_ts)) FROM `course_progress`")))}) 
+
+			# output$SC.o <- renderText({"Participation"}) 
+			# output$learner.o <- renderText({paste("Total Learners 全部學生:", format(dbGetQuery(conn = con, statement = "select count(*) from `users`"), format="d", big.mark=','))}) 
+			# output$activelearner.o <- renderText({paste("Active Learners 活躍學生:", format(dbGetQuery(conn = con, statement = "select count(*) from ( SELECT distinct(`taiwan_user_id`) FROM `course_progress` union select distinct(`taiwan_user_id`) from `course_item_grades` union select distinct(`taiwan_discussions_user_id`) from `discussion_answer` union select distinct(`taiwan_discussions_user_id`) from `discussion_question` ) as a"), format="d", big.mark=','))}) 
+			
+			# output$IG.o <- renderText({"Engagement"}) 
+			# output$pass.o <- renderText({paste("Passed Learners 通過人數:", format(dbGetQuery(conn = con, statement = "select count(*) FROM `course_grades` where course_passing_state_id ='1'"), format="d", big.mark=','))}) 
+			# output$nonpass.o <- renderText({paste("Non-passed Learners 未通過人數:", format(dbGetQuery(conn = con, statement = "select count(*) FROM `course_grades` where course_passing_state_id ='0'"), format="d", big.mark=','))}) 
+			
+			# output$DC.o <- renderText({"Discussion/Feedback "}) 
+			# output$ques.ans.o <- renderText({paste("Questions/Answers 問題回答:", format(dbGetQuery(conn = con, statement = "select count(*) FROM `discussion_question`"), format="d", big.mark=','), "/", format(dbGetQuery(conn = con, statement = "select count(*) FROM `discussion_answer`"), format="d", big.mark=','))}) 
+			
+			# output$rating.o <- renderText({
+			#   paste("Average Rating 平均評價:", as.numeric(dbGetQuery(conn = con, statement = paste0("SELECT cast(avg(`feedback_rating`) AS char) FROM `feedback_course_ratings` WHERE `feedback_system`='STAR'"))[[1]]), " (1-5分)")
+			# }) 
+
+
 			# output$plotO.rating <- renderPlotly({
 			#   onFlushed(function(){
 			#     shinyjs::hide("busy_o")
@@ -307,6 +328,7 @@ shinyServer(function(input, output, session) {
 				            vlcex=0.8,
 				            title="Course Rating"
 				)
+				shinyjs::hide("busy_o")
 			})
 
 			output$plotO.pass_item <- renderPlotly({
@@ -330,7 +352,7 @@ shinyServer(function(input, output, session) {
 				    session$sendCustomMessage("myCallbackHandler_show", "#content_o > #ql")
 				    session$sendCustomMessage("myCallbackHandler_visible", "#content_o > .plotly")
 
-					output$Q.o <- renderText({paste("Users' Information from Questionaire (", as.character(dbGetQuery(conn = con, statement = "select count(*) FROM `questionaire`"))," Students)")}) 
+					output$Q.o <- renderText({paste("Users' Information from Questionaire 問卷資料 (", as.character(dbGetQuery(conn = con, statement = "select count(*) FROM `questionaire`"))," Students)")}) 
 					output$Q.Gender.o <- renderPlotly({
 						Q.Gender <- dbGetQuery(conn = con, statement = paste0("SELECT `Q1_您的性別`,count(*) as Number FROM `questionaire` group by `Q1_您的性別`"))			
 						if(ncol(Q.Gender) > 0){
@@ -630,7 +652,7 @@ shinyServer(function(input, output, session) {
 					  names(Q.score)<-c("Students score","Number of People","Percentage")
 					  #Q.score$`Students score` <- factor(Q.score$`Students score`, levels = Q.score$`Students score`[seq(1,max(1,length(Q.score$`Students score`)),1)])
 					  ggplot(Q.score, aes(x=`Students score`, y=`Number of People`, label=percent(`Percentage`/100))) +
-					    geom_bar(stat = "identity")+ ggtitle("我能夠說明數位時代之下消費市場的五大現像， 以及這些新興消費現像對行銷策略及品牌管理的影響")+
+					    geom_bar(stat = "identity")+ ggtitle("我能夠說明數位時代之下消費市場的五大現像")+ # 以及這些新興消費現像對行銷策略及品牌管理的影響
 					    geom_text(aes(y = `Number of People` + 1))+
 					    theme(axis.text.x = element_text(angle = 0, hjust = 1,vjust = 0.5))
 					  ggplotly()
@@ -2325,7 +2347,7 @@ UIWeb <- function(selectionlist){
                     h5(textOutput("nonpass.o"), align = "left"),
                     #br(),hr()
                     width=3,height=130) , #hr(),
-	            box(title="通過項目",status="primary",solidHeader = TRUE,
+	            box(title="通過項目 [verified passed： 通過並取得證書]",status="primary",solidHeader = TRUE,
 	             	plotlyOutput("plotO.pass_item"), br(),
 	             	width=8),#hr(),
 	       		box(title="評分回饋 [1-5分] [軸標籤代表人數]",status="primary",solidHeader = TRUE,
@@ -2333,8 +2355,9 @@ UIWeb <- function(selectionlist){
 	               	width=4),
 
              div(id="ql",
+             	 br(),br(),
              	 h3(strong(textOutput("Q.o")), align = "center"),
-	             box(title="學生背景（問卷）",status="primary",solidHeader = TRUE,
+	             box(title="學生背景",status="primary",solidHeader = TRUE,
 		             fluidRow(column(6,
 		                             plotlyOutput("Q.Gender.o", height = "400px"), br(), br(),
 		                             plotlyOutput("Q.Education.o", height = "400px"), br(), br(),
@@ -2349,13 +2372,14 @@ UIWeb <- function(selectionlist){
 				                    plotlyOutput("Q.Time.o", height = "400px"),br(), br(),
 				                    plotlyOutput("Q.LearnM.o"),br(), br()
 				                    #hr(),br()
+				                    #plotlyOutput("Q.LearnT.o"),br(),
+                     				#plotlyOutput("Q.schedule.o"),br(),
 				             )
 		             ),
-		             
-		             #plotlyOutput("Q.LearnT.o"),br(),
-                     #plotlyOutput("Q.schedule.o"),br(),
-                     br(), br(), br(),br(), br(), hr(),br(), br(),
-                     
+		             br(), br(), br(), br(),
+                     width=12
+                 ),
+                 box(title="問卷題目 [1-5分]",status="primary",solidHeader = TRUE,
                      column(6,
 			             plotlyOutput("Q.score.o1"),br(),
 			             plotlyOutput("Q.score.o2"),br(),
@@ -2440,7 +2464,7 @@ UIWeb <- function(selectionlist){
                p("Calculation in progress...", align = "center")),
            div(
              id = "sub.SC",
-             box(title="課程項目參與人數（開始 & 離開）",status="primary",solidHeader = TRUE,
+             box(title="課程項目參與人數（進入 & 離開）",status="primary",solidHeader = TRUE,
             	 plotlyOutput("plotSC.Histogram", height = "400px",width="auto"),
              width=9, height = "480px"),
              br(),
@@ -2480,6 +2504,7 @@ UIWeb <- function(selectionlist){
              #"Source: NTU MOOCs",
              "*趨勢線:"," 表現資料的線性走勢，判別變數(學習時間)與應變數(成績)之間是正相關(正斜率)或是負相關(負斜率)",
              " ",
+             "*verified: 通過並取得證書",
              sep = "<br>"
            ))),
            tags$head(
@@ -2511,7 +2536,7 @@ UIWeb <- function(selectionlist){
                p("Calculation in progress...", align = "center")),
 	             plotlyOutput("plotIG.Scatterplot", height ="350px",width="auto"),
              #HTML("<hr>"),
-             checkboxInput('txt.IG_visible', width="900px", 'Trendline 趨勢線', value = FALSE),
+             checkboxInput('txt.IG_visible', width="900px", 'Trendline 點我看趨勢線', value = FALSE),
              uiOutput("txt.IG"),
 	         width=9, height="570px"),
 
@@ -2629,7 +2654,7 @@ UIWeb <- function(selectionlist){
              HTML("<br><hr>"),
              
 
-			 box(title="問答間隔標準差",status="primary",solidHeader = TRUE,
+			 box(title="問答間隔標準差 [InterResponse: 回答與回答之間的天數間隔]",status="primary",solidHeader = TRUE,
 	             sliderInput(
 	               "slider.sd.DC",
 	               "Standard Deviation Filter:",
@@ -2692,13 +2717,15 @@ UIWeb <- function(selectionlist){
              value = 30
            ),
            hr(),
-           actionButton("recal", "Recal"),
-           actionButton("clean", "Clean"),
+           # actionButton("recal", "Recal"),
+           # actionButton("clean", "Clean"),
            br(),
            helpText(HTML(paste(
              #"Source: NTU MOOCs",
              #"*Processing time of the wordcloud : 3~5 sec.",
               "*產生文字雲約需 3~5 秒",
+              "",
+              "*文字大小代表出現頻率",
              sep = "<br>"
            ))),
            tags$head(
