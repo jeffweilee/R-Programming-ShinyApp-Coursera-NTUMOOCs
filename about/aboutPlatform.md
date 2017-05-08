@@ -41,7 +41,7 @@
 5. Wordcloud
       * 用文字雲呈現學生問題的關鍵字
 6. Your MOOCs
-      * 點擊選單欄的「Your MOOCs」即可選擇其他課程
+      * 點擊選單欄的「Your MOOCs」即可選擇其他課程
 <br><br>
 
 
