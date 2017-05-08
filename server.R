@@ -216,6 +216,27 @@ shinyServer(function(input, output, session) {
 		}
 	})
 
+
+	####################
+	# Email Feedback
+	####################
+	observeEvent(input$btnContactUs, {
+    if(!is.null(input$contactBody) && !is.na(input$contactBody)){
+      content <- paste("<html><b>USER:<b><br>", USER$Role, "@ntu.edu.tw <br><br><b>Course:<b><br>", USER$courseDBName, "<br><br><b>Section:<b><br>", input$contactSection, 
+      					"<br><br><b>Content:<b><br>", input$contactBody, "</html>")
+      updateTextInput(session, "contactBody", value = "")
+      send.mail(from = "ntu.cpcp@gmail.com",
+                to = c("r04725023@ntu.edu.tw"),#, "r04725009@ntu.edu.tw") #, "r05725007@ntu.edu.tw", "r05725028@ntu.edu.tw"),
+                subject = paste0("NTU MOOCs 意見回饋-", USER$Role ,"-",USER$courseDBName, "-", input$contactSection),
+                html = TRUE,
+                body = content,
+                encoding = "utf-8",
+                smtp = list(host.name = "smtp.gmail.com", port = 465, user.name = "ntu.cpcp", passwd = "lckung413", ssl = T),
+                authenticate = T,
+                send = TRUE)
+	   }
+	})
+
 	########################################	#######
 	########################################	##	 ##
 	# Overview 									##	 ##
@@ -1834,77 +1855,6 @@ shinyServer(function(input, output, session) {
 
 #runApp(list(ui = ui, server = server))
 
-
-#################
-# Run inner Env.
-#################
-RunEnvironment <- function(session,input,output,user,selectionlist,rows){
-	output$page <- renderUI({
-		div(class = "outer", dashboardPage(
-		    dashboardHeader(
-			    title="臺大慕課 NTU MOOCs"
-			    #titleWidth = 230
-			 ),
-			 dashboardSidebar(
-			    sidebarMenu(
-			      #menuItem("Dashboard", icon = icon("dashboard"), tabName = "dashboard"),
-			      br(),
-			      menuItem("About", icon = icon("commenting"), tabName = "about",
-			      	menuSubItem("Platform", tabName = "a_platform"),
-			      	menuSubItem("Overview [總覽)", tabName = "a_overview"),
-			      	menuSubItem("Participation [參與]",  tabName = "a_participation"),
-			      	menuSubItem("Engagement [成績]",  tabName = "a_engagement"),
-			      	menuSubItem("Discussion [論壇]",  tabName = "a_discussion"),
-			      	menuSubItem("Word Cloud [文字雲]",  tabName = "a_wordcloud"),
-			      	menuSubItem("Contact us [聯絡]", tabName = "a_contact"),
-			      	menuSubItem("About us [關於]",  tabName = "a_us")
-			      ),
-			      menuItem("Overview", icon = icon("dashboard"), badgeLabel = "總覽", badgeColor = "black",tabName = "overview"),
-			      menuItem("Participation", icon = icon("area-chart"), badgeLabel = "參與", badgeColor = "black",tabName = "participation"),
-			      menuItem("Engagement", icon = icon("pencil"), badgeLabel = "成績", badgeColor = "black",tabName = "engagement"),
-			      menuItem("Discussion", icon = icon("tasks"), badgeLabel = "論壇", badgeColor = "black",tabName = "discussion"),
-			      menuItem("Word Cloud", icon = icon("cloud"), badgeLabel = "文字雲", badgeColor = "black", tabName = "wordcloud"),
-			      menuItem("Your MOOCs", icon = icon("bookmark"), tabName = "moocs"),
-				  menuItem("Teacher Management",href="http://140.112.107.63:8000",badgeLabel = "link", badgeColor = "green", icon=icon("user")),hr(),
-				  menuItem("Logout", icon=icon("sign-out"))
-				),conditionalPanel(
-				      condition = "false",
-				      selectInput("load","load",list())
-				)
-			  ), 
-			dashboardBody(
-				HTML("<script src='AdminLTE-2.0.6/app.js'></script>"),
-				tags$script(HTML('
-					$("body").addClass("skin-blue"); 
-					$(".sidebar-toggle").click(function(){
-						if($("body").hasClass("sidebar-collapse")){$("body").removeClass("sidebar-collapse")}
-						else{$("body").addClass("sidebar-collapse")}  
-						
-						if($("body").hasClass("sidebar-open")){$("body").removeClass("sidebar-open")}
-						else{$("body").addClass("sidebar-open")}  
-
-						}); 
-					$(".fa-angle-left").toggleClass("fa-angle-down"); $(".content").css("min-height","900px"); 
-					setTimeout(function(){$("section > ul > li:nth-child(2) > a").click();},700); 
-					$("section > ul > li:nth-child(2) > ul > li:nth-child(1) > a").click(); 
-					$("section > ul > li:nth-last-child(1) > a").click(function(){alert(\'Logout!\');location.reload(true);});')),
-				tags$style(HTML('hr{background-color:darkgrey; color:darkgrey; height:1px;} 
-					li > a > span{margin-left:5px;} 
-					.sidebar-toggle{height:50px;} 
-					.main-header .logo {font-size:14px; /*margin-left:-30px; width:290px;*/ } 
-					.main-sidebar{font-size:14px;width:230px;} .main-header > .navbar{height:50px;}')),
-				  
-				       UIWeb(selectionlist)
-				  
-		    )
-		))
-	})
-
-	output$inCourseList <- renderUI({
-		div(class = "outer",  do.call(bootstrapPage, UIList(user, rows)))
-	})
-}
-
 ###################
 # UpdateModulelist 
 ###################
@@ -2189,6 +2139,78 @@ UIList <- function(user, rows) {
 }
 
 
+
+#################
+# Run inner Env.
+#################
+RunEnvironment <- function(session,input,output,user,selectionlist,rows){
+	output$page <- renderUI({
+		div(class = "outer", dashboardPage(
+		    dashboardHeader(
+			    title="臺大慕課 NTU MOOCs"
+			    #titleWidth = 230
+			 ),
+			 dashboardSidebar(
+			    sidebarMenu(
+			      #menuItem("Dashboard", icon = icon("dashboard"), tabName = "dashboard"),
+			      br(),
+			      menuItem("About", icon = icon("commenting"), tabName = "about",
+			      	menuSubItem("Platform", tabName = "a_platform"),
+			      	menuSubItem("Overview [總覽)", tabName = "a_overview"),
+			      	menuSubItem("Participation [參與]",  tabName = "a_participation"),
+			      	menuSubItem("Engagement [成績]",  tabName = "a_engagement"),
+			      	menuSubItem("Discussion [論壇]",  tabName = "a_discussion"),
+			      	menuSubItem("Word Cloud [文字雲]",  tabName = "a_wordcloud"),
+			      	menuSubItem("Contact us [聯絡]", tabName = "a_contact"),
+			      	menuSubItem("About us [關於]",  tabName = "a_us"),
+			      	menuSubItem("FAQ [問答]",  tabName = "a_faq")
+			      ),
+			      menuItem("Overview", icon = icon("dashboard"), badgeLabel = "總覽", badgeColor = "black",tabName = "overview"),
+			      menuItem("Participation", icon = icon("area-chart"), badgeLabel = "參與", badgeColor = "black",tabName = "participation"),
+			      menuItem("Engagement", icon = icon("pencil"), badgeLabel = "成績", badgeColor = "black",tabName = "engagement"),
+			      menuItem("Discussion", icon = icon("tasks"), badgeLabel = "論壇", badgeColor = "black",tabName = "discussion"),
+			      menuItem("Word Cloud", icon = icon("cloud"), badgeLabel = "文字雲", badgeColor = "black", tabName = "wordcloud"),
+			      menuItem("Your MOOCs", icon = icon("bookmark"), tabName = "moocs"),
+				  menuItem("Teacher System",href="http://140.112.107.63:8000",badgeLabel = "link", badgeColor = "green", icon=icon("user")),hr(),
+				  menuItem("Logout", icon=icon("sign-out"))
+				),conditionalPanel(
+				      condition = "false",
+				      selectInput("load","load",list())
+				)
+			  ), 
+			dashboardBody(
+				HTML("<script src='AdminLTE-2.0.6/app.js'></script>"),
+				tags$script(HTML('
+					$("body").addClass("skin-blue"); 
+					$(".sidebar-toggle").click(function(){
+						if($("body").hasClass("sidebar-collapse")){$("body").removeClass("sidebar-collapse")}
+						else{$("body").addClass("sidebar-collapse")}  
+						
+						if($("body").hasClass("sidebar-open")){$("body").removeClass("sidebar-open")}
+						else{$("body").addClass("sidebar-open")}  
+
+						}); 
+					$(".fa-angle-left").toggleClass("fa-angle-down"); $(".content").css("min-height","900px"); 
+					setTimeout(function(){$("section > ul > li:nth-child(2) > a").click();},700); 
+					$("section > ul > li:nth-child(2) > ul > li:nth-child(1) > a").click(); 
+					$("section > ul > li:nth-last-child(1) > a").click(function(){alert(\'Logout!\');location.reload(true);});')),
+				tags$style(HTML('hr{background-color:darkgrey; color:darkgrey; height:1px;} 
+					li > a > span{margin-left:5px;} 
+					.sidebar-toggle{height:50px;} 
+					.main-header .logo {font-size:14px; /*margin-left:-30px; width:290px;*/ } 
+					.main-sidebar{font-size:14px;width:230px;} .main-header > .navbar{height:50px;}')),
+				  
+				       UIWeb(selectionlist)
+				  
+		    )
+		))
+	})
+
+	output$inCourseList <- renderUI({
+		div(class = "outer",  do.call(bootstrapPage, UIList(user, rows)))
+	})
+}
+
 ##################################################		###  ###  ######
 ##################################################		###  ###  ######
 ##################################################		###  ###	##
@@ -2206,17 +2228,17 @@ UIWeb <- function(selectionlist){
 
   return(tabItems(
   	tabItem(tabName = "a_platform",
-  		shinyUI(fluidPage(HTML("<style>body{font-size:20px;font-family:微軟正黑體,Microsoft JhengHei;}h1,h2,h3,h4,h5,h6{font-family:微軟正黑體,Microsoft JhengHei;}</style>"),column(12, includeMarkdown("about/aboutPlatform.md"))))),
+  		shinyUI(fluidPage(HTML("<style>body{font-size:20px;font-family:微軟正黑體,Microsoft JhengHei;}h1,h2,h3,h4,h5,h6{font-family:微軟正黑體,Microsoft JhengHei;}</style>"),column(1), column(10, includeMarkdown("about/aboutPlatform.md"))))),
   	tabItem(tabName = "a_overview",
-  		shinyUI(fluidPage(column(12, includeMarkdown("about/aboutOverview.md"))))),
+  		shinyUI(fluidPage(column(1), column(10, includeMarkdown("about/aboutOverview.md"))))),
   	tabItem(tabName = "a_participation",
-  		shinyUI(fluidPage(column(12, includeMarkdown("about/aboutParticipation.md"))))),
+  		shinyUI(fluidPage(column(1), column(10, includeMarkdown("about/aboutParticipation.md"))))),
   	tabItem(tabName = "a_engagement",
-  		shinyUI(fluidPage(column(12, includeMarkdown("about/aboutEngagement.md"))))),
+  		shinyUI(fluidPage(column(1), column(10, includeMarkdown("about/aboutEngagement.md"))))),
   	tabItem(tabName = "a_discussion",
-  		shinyUI(fluidPage(column(12, includeMarkdown("about/aboutDiscussion.md"))))),
+  		shinyUI(fluidPage(column(1), column(10, includeMarkdown("about/aboutDiscussion.md"))))),
   	tabItem(tabName = "a_wordcloud",
-  		shinyUI(fluidPage(column(12, includeMarkdown("about/aboutWordcloud.md"))))),
+  		shinyUI(fluidPage(column(1), column(10, includeMarkdown("about/aboutWordcloud.md"))))),
   	tabItem(tabName = "a_contact",
   		shinyUI(fluidPage(
   			column(12, align="center",
@@ -2226,13 +2248,16 @@ UIWeb <- function(selectionlist){
                        hr(), tags$head(tags$style("#contactBody{margin-left:-150px;}")),
                        #HTML("<h4><i>We would like to hear your voice. Please let us know where and what to improve!</i></h4> <br><br>"),
                        br(),br(),
-                       selectInput("contactSection", "My comment is about:", width = "600px", choices = c("The platform", "Overview", "Participation", "Engagement", "Discussion", "Wordcloud", "Others")),
-                       textAreaInput("contactBody", "", "", placeholder="We would like to hear your voice. Please let us know what to improve!", width = "600px", height="250px"),
-                       actionButton("btnContactUs","Submit", width = "595px", onclick="alert('謝謝您的寶貴的建議！Thanks for your valuable comment! We will look into it!'); setTimeout(function(){$('#contactBody').val('');},1000)")
+                       selectInput("contactSection", "我的留言是關於：", width = "600px", choices = c("NTU MOOCs Platform (平臺)", "Overview (總覽)", "Participation (參與)", "Engagement (成績)", "Discussion (論壇)", "Wordcloud (文字雲)", "Others (其他)")),
+                       textAreaInput("contactBody", "", "", placeholder="您的回饋是我們進步的動力! 
+We would like to hear your voice. Please let us know what to improve!", width = "600px", height="250px"),
+                       actionButton("btnContactUs","提交", width = "595px", onclick="alert('謝謝您的寶貴的建議！Thanks for your valuable comment! We will look into it!'); setTimeout(function(){$('#contactBody').val('');},1000)")
              )
   	 	))),
   	tabItem(tabName = "a_us",
   		shinyUI(fluidPage(column(1), column(10, includeMarkdown("about/aboutUs.md"))))),
+  	tabItem(tabName = "a_faq",
+  		shinyUI(fluidPage(column(1), column(10, includeMarkdown("about/aboutFAQ.md"))))),
 
     tabItem(tabName = "overview",
              shinyUI(
