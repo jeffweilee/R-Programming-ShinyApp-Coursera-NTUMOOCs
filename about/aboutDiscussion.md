@@ -29,7 +29,7 @@
    <img src="D3.png" alt="D3" width=80%>  
    <br><br>
 
-### __2. 學生回答活躍貢獻度 Discussion Question and Users' Contribution__
+### __2. 學生回答活躍貢獻度__
 * 圖表簡介
   +  User(學生) 與 Q(問題) 的連線代表該學生回答了該問題，連線越粗代表回答該題次數越多
  <br><br> <img src="D4.png" alt="D4" width=80%>  br><br>
