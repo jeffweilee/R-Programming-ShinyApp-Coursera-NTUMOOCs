@@ -39,7 +39,7 @@
   + 評價分數平均的來源 
   <br>例如：評價為 4 分有可能是很多 5 分與一些 1 分或是全部都是 4 分而來
   
-  <img src="OverView2.png" alt="OverView2" width=100%>
+ <!-- <img src="OverView2.png" alt="OverView2" width=100%><!--
 
 ### __3. 通過項目__
 * 了解課程中各個項目的通過、未通過與認證通過的學生的數量與比例
