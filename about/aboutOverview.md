@@ -6,14 +6,13 @@
 * 提供課程的基本資料（如：開課時間、結束時間等）
 * 提供學生的基本資料（來自課後的問卷)
 
-<br><br>
-<hr>
+<br><br><hr>
 
 ## __課程基本資料__
-<br><br>
+<br>
 ### __1. 課程基本資料__ 
 
-<!--<img src="OverView1.png" alt="OverView1" width=700>-->
+<img src="OverView1.png" alt="OverView1" width=700>
 
 * 資料範圍
   + 開課時間、閉課時間
@@ -39,7 +38,7 @@
   + 評價分數平均的來源 
   <br>例如：評價為 4 分有可能是很多 5 分與一些 1 分或是全部都是 4 分而來
   
- <!-- <img src="OverView2.png" alt="OverView2" width=100%><!--
+ <img src="OverView2.png" alt="OverView2" width=100%>
 
 ### __3. 通過項目__
 * 了解課程中各個項目的通過、未通過與認證通過的學生的數量與比例
@@ -49,7 +48,7 @@
   + 難易度
     <br>例如：很大 / 很少比例的人通過課程
     
-  <!--<img src="OverView3.png" alt="OverView3" width=100%>-->
+  <img src="OverView3.png" alt="OverView3" width=100%>
     <br><br>
 <hr>
 
@@ -61,27 +60,27 @@
   + 了解此課程修課學員的特徵
   + 可針對課程吸引到的學員設計未來課程
   
-  <!--<img src="OverView4.png" alt="OverView4" width=100%>-->
+  <img src="OverView4.png" alt="OverView4" width=100%>
 
 * 修課學生背景
   + 可了解學員原本的學習範疇為理工、教育、商科等
   + 可以針對不同的學員設計未來課程<br>
   
-  <!--<img src="OverView5.png" alt="OverView5" width=100%>-->
+  <img src="OverView5.png" alt="OverView5" width=100%>
 
 ### __2. 問卷題目__
 * 學員修課前的了解程度、學員修課花費的時間
   + 了解學員原本的程度與願意花費的時間來最佳化課程影片與作業設計
   
-  <!--<img src="OverView6.png" alt="OverView6" width=100%>-->
+  <img src="OverView6.png" alt="OverView6" width=100%>
 
 * 學員修課的學習方法
   + 了解學員最注重在使用平台的哪種學習工具（影片）
   + 了解課程設計可以著重在哪種學習工具
   
-  <!--<img src="OverView7.png" alt="OverView7" width=100%>-->
+  <img src="OverView7.png" alt="OverView7" width=100%>
 
 * 學員修課的學習時間
   + 了解學員平時最常在哪個時段學習
   
-  <!--<img src="OverView8.png" alt="OverView8" width=100%>-->
+  <img src="OverView8.png" alt="OverView8" width=100%>

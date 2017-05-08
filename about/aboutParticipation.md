@@ -9,7 +9,7 @@
 <br><br><hr>
 
 ## __學員的課程參與度__
-<br><br>
+<br>
 ### __1. 課程參與互動圖表__ 
 * 圖表簡介
   + 綠線為「開始」使用課程
@@ -17,7 +17,7 @@
   + 藉此圖表可以了解此課程在不同時間觀賞的人數
   + 藉此圖表可以了解此課程在不同時間有多少人「開始」但沒有「完成」
   + 老師們藉此可以比對不同課程隨著時間變化的熱門程度
-  <br><br> <img src="Participation1.png" alt="Participation1" width=100%> <br><br>
+  <br><br> <img src="Participation1.png" alt="Participation1" height=500> <br><br>
 
 * 課程項目選單
   + 第一個選單為「Module」，乃每星期老師開課的主題
