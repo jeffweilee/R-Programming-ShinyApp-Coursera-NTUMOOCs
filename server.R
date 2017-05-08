@@ -2123,7 +2123,7 @@ calwordFreq <- function(context, mode){
 UILogin <- function() {
 	tagList(
 		tags$head(
-			tags$style(type = "text/css", "#foot{text-align:center; position:relative; bottom:5px;} #login {width:300px; font-size:14px; text-align:center; position:absolute; top:35%; left:50%; margin-top:-100px; margin-left:-150px;}")
+			tags$style(type = "text/css", "#foot{text-align:center; position:relative; bottom:5px;} #login {width:300px; font-size:14px; text-align:center; position:absolute; top:35%; left:50%; margin-top:-100px; margin-left:-150px;}<style>body{font-size:20px;font-family:微軟正黑體,Microsoft JhengHei;}h1,h2,h3,h4,h5,h6{font-family:微軟正黑體,Microsoft JhengHei;}</style>")
 		),
 	  div(
 	    id = "login",
@@ -2161,7 +2161,7 @@ UIList <- function(user, rows) {
 	if(is.null(user)) user <- ""
 	tagList(
 	  tags$head(
-			tags$style(type = "text/css", ".action-button{word-break: break-all; min-width:320px;} #foot{text-align:center; position:relative; bottom:5px;} #weblist {text-align:center;margin-top:30px;} hr{background-color:darkgrey; color:darkgrey; height:2px;}"), 
+			tags$style(type = "text/css", ".action-button{word-break: break-all; min-width:320px;} #foot{text-align:center; position:relative; bottom:5px;} #weblist {text-align:center;margin-top:30px;} hr{background-color:darkgrey; color:darkgrey; height:2px;}<style>body{font-size:20px;font-family:微軟正黑體,Microsoft JhengHei;}h1,h2,h3,h4,h5,h6{font-family:微軟正黑體,Microsoft JhengHei;}</style>"), 
 			tags$script('Shiny.addCustomMessageHandler("myCallbackHandler_uiList", function(typeMessage) {alert(typeMessage);})')
 		),    
 		div(
@@ -2206,7 +2206,7 @@ UIWeb <- function(selectionlist){
 
   return(tabItems(
   	tabItem(tabName = "a_platform",
-  		shinyUI(fluidPage(column(12, includeMarkdown("about/aboutPlatform.md"))))),
+  		shinyUI(fluidPage(HTML("<style>body{font-size:20px;font-family:微軟正黑體,Microsoft JhengHei;}h1,h2,h3,h4,h5,h6{font-family:微軟正黑體,Microsoft JhengHei;}</style>"),column(12, includeMarkdown("about/aboutPlatform.md"))))),
   	tabItem(tabName = "a_overview",
   		shinyUI(fluidPage(column(12, includeMarkdown("about/aboutOverview.md"))))),
   	tabItem(tabName = "a_participation",

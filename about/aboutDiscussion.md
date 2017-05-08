@@ -10,8 +10,8 @@
 <hr>
 
 ## __討論區資料分析__
-
-### __1. Discussion Question and Answers__
+<br>
+### __1. 問答時序與熱絡度 Discussion Question and Answers__
 * 圖表簡介
   + 每一行代表一個問題與他接續產生的回答
   + 「+」代表問題，而「□」代表回答
@@ -19,18 +19,22 @@
   + 藉由看問題被回答了多少次（多少個「□」），可以了解問題在學生之間的共鳴性
   + 藉由看問題與回答之間的間隔，可以了解問題對於學生的急迫性與重要性
   + 縱軸代表著題目的題號，會與某題目一對一對應
-  
-<img src="D1.png" alt="D1" width=80%>  
+   <br><br><img src="D1.png" alt="D1" width=80%>  <br><br>
 
 * Only Show Top 30 Discussions
   + 某些課程的超過 30 筆，為了讓圖表更方便檢閱，提供「Only Show Top 30 Discussions」的選項  
   + 下圖顯示有勾選與沒有勾選的差異
-  
-<img src="D2.png" alt="D2" width=100%>  
+   <br><br>
+   <img src="D2.png" alt="D2" width=80%>  
+   <img src="D3.png" alt="D3" width=80%>  
+   <br><br>
 
-<img src="D3.png" alt="D3" width=100%>  
-  
-### __2. 回應時間與問題距離天數的標準差表__
+### __2. 學生回答活躍貢獻度__
+* 圖表簡介
+  +  User(學生) 與 Q(問題) 的連線代表該學生回答了該問題，連線越粗代表回答該題次數越多
+ <br><br> <img src="D4.png" alt="D4" height=500>  <br><br>
+
+### __3. 回應時間與問題距離天數的標準差表__
 * 圖表簡介
   + 顯示每個問題回答時間天數的標準差
   + 老師可以藉此知道各個問題被回答的離散程度
@@ -41,19 +45,16 @@
   + 拉條上面的數值為圖表中虛線橫軸的數值
   + 藉由調整拉條可以改變圖表中的虛線
   + 此功能可以幫助使用者更加方便比較
-  
-<img src="D5.png" alt="D5" width=80%>  
+   <br><br><img src="D5.png" alt="D5" width=80%><br><br>
   
 ### __3. 資料下載__ 
 * 圖表下方提供 csv 檔的資料下載
   + utf8 大多為 Mac OS 作業系統所使用 
   + big5 的下載格式大多為 Windows 作業系統所使用 
-  + 如果不太清楚建議兩種格式都下載，開啟沒有亂碼的為適用的格式
-
-<img src="Participation2.png" alt="Participation2" width=600>
+  + 如果不太清楚建議兩種格式都下載，開啟沒有亂碼的為適用的格式
+  <br><br><img src="Participation2.png" alt="Participation2" width=600> <br><br>
 
 ### __4. 資料搜索__ 
 * 使用者可以利用關鍵字搜尋自己所需的詳細資料
-
-<img src="D6.png" alt="D6" width=80%>
+ <br><br><img src="D6.png" alt="D6" width=80%> <br><br>
 
