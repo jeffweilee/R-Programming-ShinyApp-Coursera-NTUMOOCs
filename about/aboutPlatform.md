@@ -1,7 +1,6 @@
 # <center> NTU MOOCs 資料分析平台</center>
 <hr>
 
-
 ## __主要功能__
 * 將學生線上學習行為以互動式圖表呈現
 * 將學生提問與反饋以互動式圖表呈現
@@ -9,7 +8,7 @@
 <br><br>
 <hr>
 
-## __進入平台課程__
+<!---## __進入平台課程__
 
 1. 輸入平台網址後，請登入平台<br>
 
@@ -24,7 +23,7 @@
 
   <img src="Platform3.png" alt="Platform3">
 
-<hr>
+<hr>-->
 ## __平台資料分析__
 
 1. Overview
@@ -41,16 +40,17 @@
       * 可了解學生多久才回應某問題（問題有多被重視）
 5. Wordcloud
       * 用文字雲呈現學生問題的關鍵字
-      
-      
-<hr>
+6. Your MOOCs
+      * 點擊選單欄的「Your MOOCs」即可選擇其他課程
+<br><br>
 
+
+<!--
+<hr>
 ## __選擇平台課程__
 
-
 點擊選單欄的「Your MOOCs」即可選擇其他課程<br>
-
   <img src="Platform4.png" alt="Platform4" width=100%>
+-->
 
-<br><br>
 
