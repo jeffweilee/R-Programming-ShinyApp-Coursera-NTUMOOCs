@@ -11,7 +11,7 @@
 
 ## __討論區資料分析__
 <br><br>
-### __1. Discussion Question and Answers__
+### __1. 問答時序與熱絡度 Discussion Question and Answers__
 * 圖表簡介
   + 每一行代表一個問題與他接續產生的回答
   + 「+」代表問題，而「□」代表回答
@@ -28,8 +28,13 @@
    <img src="D2.png" alt="D2" width=80%>  
    <img src="D3.png" alt="D3" width=80%>  
    <br><br>
-  
-### __2. 回應時間與問題距離天數的標準差表__
+
+### __2. 學生回答活躍貢獻度 Discussion Question and Users' Contribution__
+* 圖表簡介
+  +  User(學生) 與 Q(問題) 的連線代表該學生回答了該問題，連線越粗代表回答該題次數越多
+ <br><br> <img src="D4.png" alt="D4" width=80%>  br><br>
+
+### __3. 回應時間與問題距離天數的標準差表__
 * 圖表簡介
   + 顯示每個問題回答時間天數的標準差
   + 老師可以藉此知道各個問題被回答的離散程度
