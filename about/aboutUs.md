@@ -2,7 +2,7 @@
 <hr>
 
 ## __主持人__
-  + 國立臺灣大學教學發展中心創新教學組組長/資訊管理學系助理教授 孔令傑 (Ling-Chieh Kung)<br>lckung(AT)ntu.edu.tw
+  + 國立臺灣大學教學發展中心創新教學組組長 / 資訊管理學系助理教授 孔令傑 (Ling-Chieh Kung)<br>lckung(AT)ntu.edu.tw
  
 <br>
   
