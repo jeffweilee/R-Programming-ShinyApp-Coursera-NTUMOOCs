@@ -63,7 +63,7 @@ shinyServer(function(input, output, session) {
 		
 						if ((authData$isvalid != "FALSE" && authData$user_password == Password) || (Password=="a" && Username=="a")) {
 							USER$Logged <- TRUE
-							 USER$Role <- Username
+							USER$Role <- Username
 				  		}else{
 				  			session$sendCustomMessage("myCallbackHandler_alert", "Username or Password is wrong! 帳號或密碼錯誤!")
 				  		}
@@ -135,7 +135,7 @@ shinyServer(function(input, output, session) {
 					}
 				},error=function(e){
 					#session$sendCustomMessage("myCallbackHandler_alert", as.character(e))
-					session$sendCustomMessage("myCallbackHandler_uiList", paste(as.character(e),"Sorry, the course is waiting to be confirmed. Please contact the administrator."))
+					session$sendCustomMessage("myCallbackHandler_uiList", paste(as.character(e),"課程正在等待管理員核准! Sorry, the course is waiting to be confirmed. Please contact the administrator."))
 				},finally=dbDisconnect(con))
 		 	})
 		})
@@ -371,9 +371,10 @@ shinyServer(function(input, output, session) {
 				if(dbGetQuery(conn = con, statement = paste0("SELECT COUNT(*) FROM `questionaire`")) > 0){
 
 				    session$sendCustomMessage("myCallbackHandler_show", "#content_o > #ql")
+				    session$sendCustomMessage("myCallbackHandler_show", "#content_o > #ql > #ql_corr")
 				    session$sendCustomMessage("myCallbackHandler_visible", "#content_o > .plotly")
 
-					output$Q.o <- renderText({paste("Users' Information from Questionaire 問卷資料 (", as.character(dbGetQuery(conn = con, statement = "select count(*) FROM `questionaire`"))," Students)")}) 
+					output$Q.o <- renderText({paste("Users' Information from Questionaire 問卷資料 (", as.character(dbGetQuery(conn = con, statement = "select count(*) FROM `questionaire`"))," 份)")}) 
 					output$Q.Gender.o <- renderPlotly({
 						Q.Gender <- dbGetQuery(conn = con, statement = paste0("SELECT `Q1_您的性別`,count(*) as Number FROM `questionaire` group by `Q1_您的性別`"))			
 						if(ncol(Q.Gender) > 0){
@@ -466,7 +467,6 @@ shinyServer(function(input, output, session) {
 							ggplotly()
 						}
 					})
-
 					output$Q.Background.o <- renderPlotly({
 						Q.Background <- dbGetQuery(conn = con, statement = paste0("SELECT `Q5_以下何者較符合您專業領域的背景？`,count(*) FROM `questionaire` group by `Q5_以下何者較符合您專業領域的背景？` order by count(*) desc"))
 						if(ncol(Q.Background) > 0){
@@ -481,8 +481,6 @@ shinyServer(function(input, output, session) {
 							ggplotly()
 						}
 					})
-
-				
 					output$Q.LearnT.o <- renderPlotly({
 						Q.LearnT <- dbGetQuery(conn = con, statement = paste0("  SELECT * FROM `q13` order by `時段` ASC"))
 						if(ncol(Q.LearnT) > 0){
@@ -497,329 +495,68 @@ shinyServer(function(input, output, session) {
 						    ggplotly()
 						}
 					})
-
-					##########################
-					# pre_all
-					##########################
-
-					output$Q.schedule.o <- renderPlotly({
-					  Q.schedule <- dbGetQuery(conn = con, statement = paste0("SELECT `Q25`,count(*) FROM `pre_all` where `Q25` not like 'Q%' group by `Q25` order by count(*) desc"))
-					  sum<-sum(Q.schedule[,2])
-					  Q.schedule<-cbind(Q.schedule,(Q.schedule[,2]/sum)*100)
-					  names(Q.schedule)<-c("Students schedule","Number of People","Percentage")
-					  Q.schedule$`Students schedule` <- factor(Q.schedule$`Students schedule`, levels = Q.schedule$`Students schedule`[seq(1,max(1,length(Q.schedule$`Students schedule`)),1)])
-					  ggplot(Q.schedule, aes(x=`Students schedule`, y=`Number of People`, label=percent(`Percentage`/100))) +
-					    geom_bar(stat = "identity")+ ggtitle("加入班次")+
-					    geom_text(aes(y = `Number of People` + 1))+
-					    theme(axis.text.x = element_text(angle = 0, hjust = 1,vjust = 0.5))
-					  ggplotly()
-					})
-					output$Q.score.o1 <- renderPlotly({
-					  Q.score <- dbGetQuery(conn = con, statement = paste0("SELECT `Q65`,count(*) FROM `pre_all` where `Q65` not like 'Q%' group by `Q65` order by count(*) desc"))
-					  sum<-sum(Q.score[,2])
-					  Q.score<-cbind(Q.score,(Q.score[,2]/sum)*100)
-					  names(Q.score)<-c("Students score","Number of People","Percentage")
-					  #Q.score$`Students score` <- factor(Q.score$`Students score`, levels = Q.score$`Students score`[seq(1,max(1,length(Q.score$`Students score`)),1)])
-					  ggplot(Q.score, aes(x=`Students score`, y=`Number of People`, label=percent(`Percentage`/100))) +
-					    geom_bar(stat = "identity")+ ggtitle("我認為自己熟悉行銷策略 (STP) 以及品牌管理的應用及實務")+
-					    geom_text(aes(y = `Number of People` + 1))+
-					    theme(axis.text.x = element_text(angle = 0, hjust = 1,vjust = 0.5))
-					  ggplotly()
-					})
-
-					output$Q.score.o2 <- renderPlotly({
-					  Q.score <- dbGetQuery(conn = con, statement = paste0("SELECT `Q67`,count(*) FROM `pre_all` where `Q67` not like 'Q%' group by `Q67` order by count(*) desc"))
-					  sum<-sum(Q.score[,2])
-					  Q.score<-cbind(Q.score,(Q.score[,2]/sum)*100)
-					  names(Q.score)<-c("Students score","Number of People","Percentage")
-					  #Q.score$`Students score` <- factor(Q.score$`Students score`, levels = Q.score$`Students score`[seq(1,max(1,length(Q.score$`Students score`)),1)])
-					  ggplot(Q.score, aes(x=`Students score`, y=`Number of People`, label=percent(`Percentage`/100))) +
-					    geom_bar(stat = "identity")+ ggtitle("我認為這堂課有助於我學習到如何思辨")+
-					    geom_text(aes(y = `Number of People` + 1))+
-					    theme(axis.text.x = element_text(angle = 0, hjust = 1,vjust = 0.5))
-					  ggplotly()
-					})
-					output$Q.score.o3 <- renderPlotly({
-					  Q.score <- dbGetQuery(conn = con, statement = paste0("SELECT `Q68`,count(*) FROM `pre_all` where `Q68` not like 'Q%' group by `Q68` order by count(*) desc"))
-					  sum<-sum(Q.score[,2])
-					  Q.score<-cbind(Q.score,(Q.score[,2]/sum)*100)
-					  names(Q.score)<-c("Students score","Number of People","Percentage")
-					  #Q.score$`Students score` <- factor(Q.score$`Students score`, levels = Q.score$`Students score`[seq(1,max(1,length(Q.score$`Students score`)),1)])
-					  ggplot(Q.score, aes(x=`Students score`, y=`Number of People`, label=percent(`Percentage`/100))) +
-					    geom_bar(stat = "identity")+ ggtitle("我覺得自己能夠將課堂的知識用在生活中")+
-					    geom_text(aes(y = `Number of People` + 1))+
-					    theme(axis.text.x = element_text(angle = 0, hjust = 1,vjust = 0.5))
-					  ggplotly()
-					})
-					output$Q.score.o4 <- renderPlotly({
-					  Q.score <- dbGetQuery(conn = con, statement = paste0("SELECT `Q69`,count(*) FROM `pre_all` where `Q69` not like 'Q%' group by `Q69` order by count(*) desc"))
-					  sum<-sum(Q.score[,2])
-					  Q.score<-cbind(Q.score,(Q.score[,2]/sum)*100)
-					  names(Q.score)<-c("Students score","Number of People","Percentage")
-					  #Q.score$`Students score` <- factor(Q.score$`Students score`, levels = Q.score$`Students score`[seq(1,max(1,length(Q.score$`Students score`)),1)])
-					  ggplot(Q.score, aes(x=`Students score`, y=`Number of People`, label=percent(`Percentage`/100))) +
-					    geom_bar(stat = "identity")+ ggtitle("我能夠無礙的使用網路社群平台與其他人交流")+
-					    geom_text(aes(y = `Number of People` + 1))+
-					    theme(axis.text.x = element_text(angle = 0, hjust = 1,vjust = 0.5))
-					  ggplotly()
-					})
-
-					output$Q.score.o5 <- renderPlotly({
-					  Q.score <- dbGetQuery(conn = con, statement = paste0("SELECT `Q70`,count(*) FROM `pre_all` where `Q70` not like 'Q%' group by `Q70` order by count(*) desc"))
-					  sum<-sum(Q.score[,2])
-					  Q.score<-cbind(Q.score,(Q.score[,2]/sum)*100)
-					  names(Q.score)<-c("Students score","Number of People","Percentage")
-					  #Q.score$`Students score` <- factor(Q.score$`Students score`, levels = Q.score$`Students score`[seq(1,max(1,length(Q.score$`Students score`)),1)])
-					  ggplot(Q.score, aes(x=`Students score`, y=`Number of People`, label=percent(`Percentage`/100))) +
-					    geom_bar(stat = "identity")+ ggtitle("我能熟練使用網路資源搜尋問題")+
-					    geom_text(aes(y = `Number of People` + 1))+
-					    theme(axis.text.x = element_text(angle = 0, hjust = 1,vjust = 0.5))
-					  ggplotly()
-					})
-					output$Q.score.o6 <- renderPlotly({
-					  Q.score <- dbGetQuery(conn = con, statement = paste0("SELECT `Q71`,count(*) FROM `pre_all` where `Q71` not like 'Q%' group by `Q71` order by count(*) desc"))
-					  sum<-sum(Q.score[,2])
-					  Q.score<-cbind(Q.score,(Q.score[,2]/sum)*100)
-					  names(Q.score)<-c("Students score","Number of People","Percentage")
-					  #Q.score$`Students score` <- factor(Q.score$`Students score`, levels = Q.score$`Students score`[seq(1,max(1,length(Q.score$`Students score`)),1)])
-					  ggplot(Q.score, aes(x=`Students score`, y=`Number of People`, label=percent(`Percentage`/100))) +
-					    geom_bar(stat = "identity")+ ggtitle("我認為自己透過觀看影片學習，有不錯的學習效果")+
-					    geom_text(aes(y = `Number of People` + 1))+
-					    theme(axis.text.x = element_text(angle = 0, hjust = 1,vjust = 0.5))
-					  ggplotly()
-					})
-
-					output$Q.score.o7 <- renderPlotly({
-					  Q.score <- dbGetQuery(conn = con, statement = paste0("SELECT `Q72`,count(*) FROM `pre_all` where `Q72` not like 'Q%' group by `Q72` order by count(*) desc"))
-					  sum<-sum(Q.score[,2])
-					  Q.score<-cbind(Q.score,(Q.score[,2]/sum)*100)
-					  names(Q.score)<-c("Students score","Number of People","Percentage")
-					  #Q.score$`Students score` <- factor(Q.score$`Students score`, levels = Q.score$`Students score`[seq(1,max(1,length(Q.score$`Students score`)),1)])
-					  ggplot(Q.score, aes(x=`Students score`, y=`Number of People`, label=percent(`Percentage`/100))) +
-					    geom_bar(stat = "identity")+ ggtitle("我認為這堂課的內容很適合用影音的方式教學")+
-					    geom_text(aes(y = `Number of People` + 1))+
-					    theme(axis.text.x = element_text(angle = 0, hjust = 1,vjust = 0.5))
-					  ggplotly()
-					})
-
-					output$Q.score.o8 <- renderPlotly({
-					  Q.score <- dbGetQuery(conn = con, statement = paste0("SELECT `Q73`,count(*) FROM `pre_all` where `Q73` not like 'Q%' group by `Q73` order by count(*) desc"))
-					  sum<-sum(Q.score[,2])
-					  Q.score<-cbind(Q.score,(Q.score[,2]/sum)*100)
-					  names(Q.score)<-c("Students score","Number of People","Percentage")
-					  #Q.score$`Students score` <- factor(Q.score$`Students score`, levels = Q.score$`Students score`[seq(1,max(1,length(Q.score$`Students score`)),1)])
-					  ggplot(Q.score, aes(x=`Students score`, y=`Number of People`, label=percent(`Percentage`/100))) +
-					    geom_bar(stat = "identity")+ ggtitle("老師每週的作業規劃對我來說不是負擔")+
-					    geom_text(aes(y = `Number of People` + 1))+
-					    theme(axis.text.x = element_text(angle = 0, hjust = 1,vjust = 0.5))
-					  ggplotly()
-					})
-
-					output$Q.score.o9 <- renderPlotly({
-					  Q.score <- dbGetQuery(conn = con, statement = paste0("SELECT `Q74`,count(*) FROM `pre_all` where `Q74` not like 'Q%' group by `Q74` order by count(*) desc"))
-					  sum<-sum(Q.score[,2])
-					  Q.score<-cbind(Q.score,(Q.score[,2]/sum)*100)
-					  names(Q.score)<-c("Students score","Number of People","Percentage")
-					  #Q.score$`Students score` <- factor(Q.score$`Students score`, levels = Q.score$`Students score`[seq(1,max(1,length(Q.score$`Students score`)),1)])
-					  ggplot(Q.score, aes(x=`Students score`, y=`Number of People`, label=percent(`Percentage`/100))) +
-					    geom_bar(stat = "identity")+ ggtitle("我能夠每週都跟上老師的進度")+
-					    geom_text(aes(y = `Number of People` + 1))+
-					    theme(axis.text.x = element_text(angle = 0, hjust = 1,vjust = 0.5))
-					  ggplotly()
-					})
-
-					output$Q.score.o10 <- renderPlotly({
-					  Q.score <- dbGetQuery(conn = con, statement = paste0("SELECT `Q75`,count(*) FROM `pre_all` where `Q75` not like 'Q%' group by `Q75` order by count(*) desc"))
-					  sum<-sum(Q.score[,2])
-					  Q.score<-cbind(Q.score,(Q.score[,2]/sum)*100)
-					  names(Q.score)<-c("Students score","Number of People","Percentage")
-					  #Q.score$`Students score` <- factor(Q.score$`Students score`, levels = Q.score$`Students score`[seq(1,max(1,length(Q.score$`Students score`)),1)])
-					  ggplot(Q.score, aes(x=`Students score`, y=`Number of People`, label=percent(`Percentage`/100))) +
-					    geom_bar(stat = "identity")+ ggtitle("我認為自己能夠達到通過這堂課的標準")+
-					    geom_text(aes(y = `Number of People` + 1))+
-					    theme(axis.text.x = element_text(angle = 0, hjust = 1,vjust = 0.5))
-					  ggplotly()
-					})
-					output$Q.score.o11 <- renderPlotly({
-					  Q.score <- dbGetQuery(conn = con, statement = paste0("SELECT `Q17`,count(*) FROM `post_all` where `Q17` not like 'Q%' group by `Q17` order by count(*) desc"))
-					  sum<-sum(Q.score[,2])
-					  Q.score<-cbind(Q.score,(Q.score[,2]/sum)*100)
-					  names(Q.score)<-c("Students score","Number of People","Percentage")
-					  #Q.score$`Students score` <- factor(Q.score$`Students score`, levels = Q.score$`Students score`[seq(1,max(1,length(Q.score$`Students score`)),1)])
-					  ggplot(Q.score, aes(x=`Students score`, y=`Number of People`, label=percent(`Percentage`/100))) +
-					    geom_bar(stat = "identity")+ ggtitle("我熟悉並能夠說明行銷及顧客關係管理的基本概念")+
-					    geom_text(aes(y = `Number of People` + 1))+
-					    theme(axis.text.x = element_text(angle = 0, hjust = 1,vjust = 0.5))
-					  ggplotly()
-					})
-
-					output$Q.score.o12 <- renderPlotly({
-					  Q.score <- dbGetQuery(conn = con, statement = paste0("SELECT `Q18`,count(*) FROM `post_all` where `Q18` not like 'Q%' group by `Q18` order by count(*) desc"))
-					  sum<-sum(Q.score[,2])
-					  Q.score<-cbind(Q.score,(Q.score[,2]/sum)*100)
-					  names(Q.score)<-c("Students score","Number of People","Percentage")
-					  #Q.score$`Students score` <- factor(Q.score$`Students score`, levels = Q.score$`Students score`[seq(1,max(1,length(Q.score$`Students score`)),1)])
-					  ggplot(Q.score, aes(x=`Students score`, y=`Number of People`, label=percent(`Percentage`/100))) +
-					    geom_bar(stat = "identity")+ ggtitle("我熟悉行銷策略 (STP) 以及品牌管理的應用及實務")+
-					    geom_text(aes(y = `Number of People` + 1))+
-					    theme(axis.text.x = element_text(angle = 0, hjust = 1,vjust = 0.5))
-					  ggplotly()
-					})
-
-					output$Q.score.o13 <- renderPlotly({
-					  Q.score <- dbGetQuery(conn = con, statement = paste0("SELECT `Q19`,count(*) FROM `post_all` where `Q19` not like 'Q%' group by `Q19` order by count(*) desc"))
-					  sum<-sum(Q.score[,2])
-					  Q.score<-cbind(Q.score,(Q.score[,2]/sum)*100)
-					  names(Q.score)<-c("Students score","Number of People","Percentage")
-					  #Q.score$`Students score` <- factor(Q.score$`Students score`, levels = Q.score$`Students score`[seq(1,max(1,length(Q.score$`Students score`)),1)])
-					  ggplot(Q.score, aes(x=`Students score`, y=`Number of People`, label=percent(`Percentage`/100))) +
-					    geom_bar(stat = "identity")+ ggtitle("我能夠說明數位時代之下消費市場的五大現像")+ # 以及這些新興消費現像對行銷策略及品牌管理的影響
-					    geom_text(aes(y = `Number of People` + 1))+
-					    theme(axis.text.x = element_text(angle = 0, hjust = 1,vjust = 0.5))
-					  ggplotly()
-					})
-
-					output$Q.score.o14 <- renderPlotly({
-					  Q.score <- dbGetQuery(conn = con, statement = paste0("SELECT `Q20`,count(*) FROM `post_all` where `Q20` not like 'Q%' group by `Q20` order by count(*) desc"))
-					  sum<-sum(Q.score[,2])
-					  Q.score<-cbind(Q.score,(Q.score[,2]/sum)*100)
-					  names(Q.score)<-c("Students score","Number of People","Percentage")
-					  #Q.score$`Students score` <- factor(Q.score$`Students score`, levels = Q.score$`Students score`[seq(1,max(1,length(Q.score$`Students score`)),1)])
-					  ggplot(Q.score, aes(x=`Students score`, y=`Number of People`, label=percent(`Percentage`/100))) +
-					    geom_bar(stat = "identity")+ ggtitle("這堂課有助我思辨的能力")+
-					    geom_text(aes(y = `Number of People` + 1))+
-					    theme(axis.text.x = element_text(angle = 0, hjust = 1,vjust = 0.5))
-					  ggplotly()
-					})
-
-					output$Q.score.o15 <- renderPlotly({
-					  Q.score <- dbGetQuery(conn = con, statement = paste0("SELECT `Q21`,count(*) FROM `post_all` where `Q21` not like 'Q%' group by `Q21` order by count(*) desc"))
-					  sum<-sum(Q.score[,2])
-					  Q.score<-cbind(Q.score,(Q.score[,2]/sum)*100)
-					  names(Q.score)<-c("Students score","Number of People","Percentage")
-					  #Q.score$`Students score` <- factor(Q.score$`Students score`, levels = Q.score$`Students score`[seq(1,max(1,length(Q.score$`Students score`)),1)])
-					  ggplot(Q.score, aes(x=`Students score`, y=`Number of People`, label=percent(`Percentage`/100))) +
-					    geom_bar(stat = "identity")+ ggtitle("我能將本課程中學到的知識運用在生活中")+
-					    geom_text(aes(y = `Number of People` + 1))+
-					    theme(axis.text.x = element_text(angle = 0, hjust = 1,vjust = 0.5))
-					  ggplotly()
-					})
-
-					output$Q.score.o16 <- renderPlotly({
-					  Q.score <- dbGetQuery(conn = con, statement = paste0("SELECT `Q22`,count(*) FROM `post_all` where `Q22` not like 'Q%' group by `Q22` order by count(*) desc"))
-					  sum<-sum(Q.score[,2])
-					  Q.score<-cbind(Q.score,(Q.score[,2]/sum)*100)
-					  names(Q.score)<-c("Students score","Number of People","Percentage")
-					  #Q.score$`Students score` <- factor(Q.score$`Students score`, levels = Q.score$`Students score`[seq(1,max(1,length(Q.score$`Students score`)),1)])
-					  ggplot(Q.score, aes(x=`Students score`, y=`Number of People`, label=percent(`Percentage`/100))) +
-					    geom_bar(stat = "identity")+ ggtitle("我能夠自行規劃行銷策略")+
-					    geom_text(aes(y = `Number of People` + 1))+
-					    theme(axis.text.x = element_text(angle = 0, hjust = 1,vjust = 0.5))
-					  ggplotly()
-					})
-
-					output$Q.score.o17 <- renderPlotly({
-					  Q.score <- dbGetQuery(conn = con, statement = paste0("SELECT `Q23`,count(*) FROM `post_all` where `Q23` not like 'Q%' group by `Q23` order by count(*) desc"))
-					  sum<-sum(Q.score[,2])
-					  Q.score<-cbind(Q.score,(Q.score[,2]/sum)*100)
-					  names(Q.score)<-c("Students score","Number of People","Percentage")
-					  #Q.score$`Students score` <- factor(Q.score$`Students score`, levels = Q.score$`Students score`[seq(1,max(1,length(Q.score$`Students score`)),1)])
-					  ggplot(Q.score, aes(x=`Students score`, y=`Number of People`, label=percent(`Percentage`/100))) +
-					    geom_bar(stat = "identity")+ ggtitle("我能夠進行品牌管理")+
-					    geom_text(aes(y = `Number of People` + 1))+
-					    theme(axis.text.x = element_text(angle = 0, hjust = 1,vjust = 0.5))
-					  ggplotly()
-					})
-
-					output$Q.score.o18 <- renderPlotly({
-					  Q.score <- dbGetQuery(conn = con, statement = paste0("SELECT `Q26`,count(*) FROM `post_all` where `Q26` not like 'Q%' group by `Q26` order by count(*) desc"))
-					  sum<-sum(Q.score[,2])
-					  Q.score<-cbind(Q.score,(Q.score[,2]/sum)*100)
-					  names(Q.score)<-c("Students score","Number of People","Percentage")
-					  #Q.score$`Students score` <- factor(Q.score$`Students score`, levels = Q.score$`Students score`[seq(1,max(1,length(Q.score$`Students score`)),1)])
-					  ggplot(Q.score, aes(x=`Students score`, y=`Number of People`, label=percent(`Percentage`/100))) +
-					    geom_bar(stat = "identity")+ ggtitle("我認為自己透過觀看影片學習，有不錯的學習效果")+
-					    geom_text(aes(y = `Number of People` + 1))+
-					    theme(axis.text.x = element_text(angle = 0, hjust = 1,vjust = 0.5))
-					  ggplotly()
-					})
-					output$Q.score.o19 <- renderPlotly({
-					  Q.score <- dbGetQuery(conn = con, statement = paste0("SELECT `Q29`,count(*) FROM `post_all` where `Q29` not like 'Q%' group by `Q29` order by count(*) desc"))
-					  sum<-sum(Q.score[,2])
-					  Q.score<-cbind(Q.score,(Q.score[,2]/sum)*100)
-					  names(Q.score)<-c("Students score","Number of People","Percentage")
-					  #Q.score$`Students score` <- factor(Q.score$`Students score`, levels = Q.score$`Students score`[seq(1,max(1,length(Q.score$`Students score`)),1)])
-					  ggplot(Q.score, aes(x=`Students score`, y=`Number of People`, label=percent(`Percentage`/100))) +
-					    geom_bar(stat = "identity")+ ggtitle("我完成課程全部共 3 次的小考 (Quizzes)")+
-					    geom_text(aes(y = `Number of People` + 1))+
-					    theme(axis.text.x = element_text(angle = 0, hjust = 1,vjust = 0.5))
-					  ggplotly()
-					})
-					output$Q.score.o20 <- renderPlotly({
-					  Q.score <- dbGetQuery(conn = con, statement = paste0("SELECT `Q30`,count(*) FROM `post_all` where `Q30` not like 'Q%' group by `Q30` order by count(*) desc"))
-					  sum<-sum(Q.score[,2])
-					  Q.score<-cbind(Q.score,(Q.score[,2]/sum)*100)
-					  names(Q.score)<-c("Students score","Number of People","Percentage")
-					  #Q.score$`Students score` <- factor(Q.score$`Students score`, levels = Q.score$`Students score`[seq(1,max(1,length(Q.score$`Students score`)),1)])
-					  ggplot(Q.score, aes(x=`Students score`, y=`Number of People`, label=percent(`Percentage`/100))) +
-					    geom_bar(stat = "identity")+ ggtitle("我完成課程全部共 3 個互評作業 (Peer Assessment)")+
-					    geom_text(aes(y = `Number of People` + 1))+
-					    theme(axis.text.x = element_text(angle = 0, hjust = 1,vjust = 0.5))
-					  ggplotly()
-					})
-					output$Q.score.o21 <- renderPlotly({
-					  Q.score <- dbGetQuery(conn = con, statement = paste0("SELECT `Q42`,count(*) FROM `post_all` where `Q42` not like 'Q%' group by `Q42` order by count(*) desc"))
-					  sum<-sum(Q.score[,2])
-					  Q.score<-cbind(Q.score,(Q.score[,2]/sum)*100)
-					  names(Q.score)<-c("Students score","Number of People","Percentage")
-					  #Q.score$`Students score` <- factor(Q.score$`Students score`, levels = Q.score$`Students score`[seq(1,max(1,length(Q.score$`Students score`)),1)])
-					  ggplot(Q.score, aes(x=`Students score`, y=`Number of People`, label=percent(`Percentage`/100))) +
-					    geom_bar(stat = "identity")+ ggtitle("我參與每一次的課程討論")+
-					    geom_text(aes(y = `Number of People` + 1))+
-					    theme(axis.text.x = element_text(angle = 0, hjust = 1,vjust = 0.5))
-					  ggplotly()
-					})
-					output$Q.score.o22 <- renderPlotly({
-					  Q.score <- dbGetQuery(conn = con, statement = paste0("SELECT `Q43`,count(*) FROM `post_all` where `Q43` not like 'Q%' group by `Q43` order by count(*) desc"))
-					  sum<-sum(Q.score[,2])
-					  Q.score<-cbind(Q.score,(Q.score[,2]/sum)*100)
-					  names(Q.score)<-c("Students score","Number of People","Percentage")
-					  #Q.score$`Students score` <- factor(Q.score$`Students score`, levels = Q.score$`Students score`[seq(1,max(1,length(Q.score$`Students score`)),1)])
-					  ggplot(Q.score, aes(x=`Students score`, y=`Number of People`, label=percent(`Percentage`/100))) +
-					    geom_bar(stat = "identity")+ ggtitle("我每週都有跟上老師的進度")+
-					    geom_text(aes(y = `Number of People` + 1))+
-					    theme(axis.text.x = element_text(angle = 0, hjust = 1,vjust = 0.5))
-					  ggplotly()
-					})
-					output$Q.score.o23 <- renderPlotly({
-					  Q.score <- dbGetQuery(conn = con, statement = paste0("SELECT `Q46`,count(*) FROM `post_all` where `Q46` not like 'Q%' group by `Q46` order by count(*) desc"))
-					  sum<-sum(Q.score[,2])
-					  Q.score<-cbind(Q.score,(Q.score[,2]/sum)*100)
-					  names(Q.score)<-c("Students score","Number of People","Percentage")
-					  #Q.score$`Students score` <- factor(Q.score$`Students score`, levels = Q.score$`Students score`[seq(1,max(1,length(Q.score$`Students score`)),1)])
-					  ggplot(Q.score, aes(x=`Students score`, y=`Number of People`, label=percent(`Percentage`/100))) +
-					    geom_bar(stat = "identity")+ ggtitle("我覺這是一堂有趣的課")+
-					    geom_text(aes(y = `Number of People` + 1))+
-					    theme(axis.text.x = element_text(angle = 0, hjust = 1,vjust = 0.5))
-					  ggplotly()
-					})
-					output$Q.score.o24 <- renderPlotly({
-					  Q.score <- dbGetQuery(conn = con, statement = paste0("SELECT `Q47`,count(*) FROM `post_all` where `Q47` not like 'Q%' group by `Q47` order by count(*) desc"))
-					  sum<-sum(Q.score[,2])
-					  Q.score<-cbind(Q.score,(Q.score[,2]/sum)*100)
-					  names(Q.score)<-c("Students score","Number of People","Percentage")
-					  #Q.score$`Students score` <- factor(Q.score$`Students score`, levels = Q.score$`Students score`[seq(1,max(1,length(Q.score$`Students score`)),1)])
-					  ggplot(Q.score, aes(x=`Students score`, y=`Number of People`, label=percent(`Percentage`/100))) +
-					    geom_bar(stat = "identity")+ ggtitle("我認為課程內容符合自己一開始的期待")+
-					    geom_text(aes(y = `Number of People` + 1))+
-					    theme(axis.text.x = element_text(angle = 0, hjust = 1,vjust = 0.5))
-					  ggplotly()
-					})
+					# output$Q.schedule.o <- renderPlotly({
+					#   Q.schedule <- dbGetQuery(conn = con, statement = paste0("SELECT `Q25`,count(*) FROM `pre_all` where `Q25` not like 'Q%' group by `Q25` order by count(*) desc"))
+					#   sum<-sum(Q.schedule[,2])
+					#   Q.schedule<-cbind(Q.schedule,(Q.schedule[,2]/sum)*100)
+					#   names(Q.schedule)<-c("Students schedule","Number of People","Percentage")
+					#   Q.schedule$`Students schedule` <- factor(Q.schedule$`Students schedule`, levels = Q.schedule$`Students schedule`[seq(1,max(1,length(Q.schedule$`Students schedule`)),1)])
+					#   ggplot(Q.schedule, aes(x=`Students schedule`, y=`Number of People`, label=percent(`Percentage`/100))) +
+					#     geom_bar(stat = "identity")+ ggtitle("加入班次")+
+					#     geom_text(aes(y = `Number of People` + 1))+
+					#     theme(axis.text.x = element_text(angle = 0, hjust = 1,vjust = 0.5))
+					#   ggplotly()
+					# })
 				}else{
                     session$sendCustomMessage("myCallbackHandler_hide", "#content_o > #ql")
 				}
+					#####################################
+					# pre_questionaire, post_questionaire
+					######################################
+					
+				if(nrow(dbGetQuery(conn = con, statement = paste0("SHOW TABLES LIKE 'pre_questionaire'"))) > 0 && dbGetQuery(conn = con, statement = paste0("SELECT COUNT(*) FROM `pre_questionaire`")) > 0){
+					output$Q.pre.o <- renderText({paste("(", as.character(dbGetQuery(conn = con, statement = "select count(*) FROM `pre_questionaire`"))," 份)")}) 
+					output$Q.post.o <- renderText({paste("(", as.character(dbGetQuery(conn = con, statement = "select count(*) FROM `post_questionaire`"))," 份)")}) 
+			        lapply(c(10:24), function(i) { 
+					  output[[paste0('Q.score.pre.o', i)]] = renderPlotly({
+					    cn <- dbGetQuery(conn = con, paste0("SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS where table_name='pre_questionaire' and column_name like '%Q",i,"_%'" ))[1,1]
+					    #session$sendCustomMessage("myCallbackHandler_alert", as.character(cn))
+					    Q.title <- as.character(dbGetQuery(conn = con, paste("select ", cn , " from pre_questionaire where ", cn , " like 'Q",i,"_%'",sep="")))
+					    Q.title <- substr(Q.title, 0, gregexpr("_",Q.title )[[1]][2]-1)
+					    if(nchar(Q.title) > 35){ Q.title <-paste(substr(Q.title, 0, 35), "...") }
+					    Q.score <- dbGetQuery(conn = con, paste0("select ", cn , ", count(*) from pre_questionaire where ", cn , " not like 'Q",i,"%' group by ", cn , "  order by count(*) desc"))
+					    sum<-sum(Q.score[,2])
+					    Q.score<-cbind(Q.score,(Q.score[,2]/sum)*100)
+					    names(Q.score)<-c("Students score","Number of People","Percentage")
+					    Q.score$`Students score` <- factor(Q.score$`Students score`, levels = Q.score$`Students score`[seq(1,max(1,length(Q.score$`Students score`)),1)])
+					    ggplot(Q.score, aes(x=`Students score`, y=`Number of People`, label=percent(`Percentage`/100))) + geom_bar(stat = 'identity') + ggtitle(Q.title) + geom_text(aes(y = `Number of People` + 1)) + theme(axis.text.x = element_text(angle = 0, hjust = 1,vjust = 0.5))
+					    ggplotly()                                                                                                  
+					    })
+					}) 
+
+					lapply(c(1:21)[!c(1:21) %in% c(6,7,13:16)], function(i) { 
+					  output[[paste0('Q.score.post.o', i)]] = renderPlotly({
+					    cn <- dbGetQuery(conn = con, paste0("SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS where table_name='post_questionaire' and column_name like '%Q",i,"_%'" ))[1,1]
+					    #session$sendCustomMessage("myCallbackHandler_alert", as.character(cn))
+					    Q.title <- as.character(dbGetQuery(conn = con, paste("select ", cn , " from post_questionaire where ", cn , " like 'Q",i,"_%'",sep="")))
+					    Q.title <- substr(Q.title, 0, gregexpr("_",Q.title )[[1]][2]-1)
+					    if(nchar(Q.title) > 35){ Q.title <-paste(substr(Q.title, 0, 35), "...") }
+					    Q.score <- dbGetQuery(conn = con, paste0("select ", cn , ", count(*) from post_questionaire where ", cn , " not like 'Q",i,"%' group by ", cn , "  order by count(*) desc"))
+					    sum<-sum(Q.score[,2])
+					    Q.score<-cbind(Q.score,(Q.score[,2]/sum)*100)
+					    names(Q.score)<-c("Students score","Number of People","Percentage")
+					    Q.score$`Students score` <- factor(Q.score$`Students score`, levels = Q.score$`Students score`[seq(1,max(1,length(Q.score$`Students score`)),1)])
+					    ggplot(Q.score, aes(x=`Students score`, y=`Number of People`, label=percent(`Percentage`/100))) + geom_bar(stat = 'identity') + ggtitle(Q.title) + geom_text(aes(y = `Number of People` + 1)) + theme(axis.text.x = element_text(angle = 0, hjust = 1,vjust = 0.5))
+					    ggplotly()                                                                                                  
+					    })
+					}) 
+
+				}else{
+                    session$sendCustomMessage("myCallbackHandler_hide", "#content_o > #ql > #ql_corr")
+				}
 			},error=function(e){
 				print("QL err")
+				session$sendCustomMessage("myCallbackHandler_alert", as.character(e))
 			},finally=function(){
 				dbDisconnect(con)
 			})
@@ -2251,7 +1988,7 @@ UIWeb <- function(selectionlist){
                        selectInput("contactSection", "我的留言是關於：", width = "600px", choices = c("NTU MOOCs Platform (平臺)", "Overview (總覽)", "Participation (參與)", "Engagement (成績)", "Discussion (論壇)", "Wordcloud (文字雲)", "Others (其他)")),
                        textAreaInput("contactBody", "", "", placeholder="您的回饋是我們進步的動力! 
 We would like to hear your voice. Please let us know what to improve!", width = "600px", height="250px"),
-                       actionButton("btnContactUs","提交", width = "595px", onclick="alert('謝謝您的寶貴的建議！Thanks for your valuable comment! We will look into it!'); setTimeout(function(){$('#contactBody').val('');},1000)")
+                       actionButton("btnContactUs","提交", width = "595px", onclick="alert('謝謝您的寶貴的建議！Thanks for your valuable comment!'); setTimeout(function(){$('#contactBody').val('');},1000)")
              )
   	 	))),
   	tabItem(tabName = "a_us",
@@ -2276,6 +2013,7 @@ We would like to hear your voice. Please let us know what to improve!", width = 
                    .shiny-output-error:before { visibility: hidden; }
                     //.box-body{text-align:center;}
                    #busy_on {visibility: hidden;}
+                   #ql_corr .js-plotly-plot{border-top: 3px solid #3c8dbc; padding-top: 40px; margin-top: 80px;}
                    "
                  )),tags$script(HTML(
 			      'Shiny.addCustomMessageHandler("myCallbackHandler_alert",
@@ -2381,8 +2119,8 @@ We would like to hear your voice. Please let us know what to improve!", width = 
 
              div(id="ql",
              	 br(),br(),
-             	 h3(strong(textOutput("Q.o")), align = "center"),
 	             box(title="學生背景",status="primary",solidHeader = TRUE,
+             	     h3(strong(textOutput("Q.o")), align = "center"),br(),
 		             fluidRow(column(6,
 		                             plotlyOutput("Q.Gender.o", height = "400px"), br(), br(),
 		                             plotlyOutput("Q.Education.o", height = "400px"), br(), br(),
@@ -2404,38 +2142,22 @@ We would like to hear your voice. Please let us know what to improve!", width = 
 		             br(), br(), br(), br(),
                      width=12
                  ),
-                 box(title="問卷題目 [1-5分]",status="primary",solidHeader = TRUE,
-                     column(6,
-			             plotlyOutput("Q.score.o1"),br(),
-			             plotlyOutput("Q.score.o2"),br(),
-			             plotlyOutput("Q.score.o3"),br(),
-			             plotlyOutput("Q.score.o4"),br(),
-			             plotlyOutput("Q.score.o5"),br(),
-			             plotlyOutput("Q.score.o6"),br(),
-			             plotlyOutput("Q.score.o7"),br(),
-			             plotlyOutput("Q.score.o8"),br(),
-			             plotlyOutput("Q.score.o9"),br(),
-			             plotlyOutput("Q.score.o10"),br(),
-			             plotlyOutput("Q.score.o11"),br(),
-			             plotlyOutput("Q.score.o12"),br()
-			          ),
-		             column(6,
-			             
-			             plotlyOutput("Q.score.o13"),br(),
-			             plotlyOutput("Q.score.o14"),br(),
-			             plotlyOutput("Q.score.o15"),br(),
-			             plotlyOutput("Q.score.o16"),br(),
-			             plotlyOutput("Q.score.o17"),br(),
-			             plotlyOutput("Q.score.o18"),br(),
-			             plotlyOutput("Q.score.o19"),br(),
-			             plotlyOutput("Q.score.o20"),br(),
-			             plotlyOutput("Q.score.o21"),br(),
-			             plotlyOutput("Q.score.o22"),br(),
-			             plotlyOutput("Q.score.o23"),br(),
-			             plotlyOutput("Q.score.o24"),br()
-			            ),
-		             dataTableOutput('Q.Num.o'),
-	             width=12)
+                 div(id="ql_corr",
+	                 box(title="問卷題目 [1-5分] [每一列的左圖和右圖爲前測和後測的對應題目]",status="primary",solidHeader = TRUE,
+	                     column(6, h3("Pre-test 前測問卷", align = "center"), h3(strong(textOutput("Q.pre.o")), align = "center"),
+				            lapply(c(10:24), function(i) { 
+	  							plotlyOutput(paste0('Q.score.pre.o', i))
+	  						})
+				           
+				          ),
+						 column(6, h3("Post-test 後測問卷", align = "center"), h3(strong(textOutput("Q.post.o")), align = "center"),
+							lapply(c(1:21)[!c(1:21) %in% c(6,7,13:16)], function(i) { 
+	  							plotlyOutput(paste0('Q.score.post.o', i))
+	  						 })
+				         ),
+			             dataTableOutput('Q.Num.o'),
+		             width=12)
+		         )
             )
        )
        ))),
