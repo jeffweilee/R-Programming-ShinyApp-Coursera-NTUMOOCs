@@ -21,13 +21,13 @@ library(shinydashboard)
 if(names(dev.cur())!="null device") dev.off()
 pdf(NULL)
 
-setwd("/srv/shiny-server/app-moocs-test")
+setwd("/srv/shiny-server/app-moocs")
 
 shinyServer(function(input, output, session) {
 
 	CloseMySQLCon()
   	USER <- reactiveValues(Logged = F, Role=NULL, courseDBName=NULL, selectionlist=NULL, selectionlist_diff=NULL)
-	dbi <- read.csv('/srv/shiny-server/app-moocs-test/dbi.csv',header=TRUE)
+	dbi <- read.csv('/srv/shiny-server/app-moocs/dbi.csv',header=TRUE)
 	dbi.user <- as.character(dbi[[1]])
 	dbi.password <- as.character(dbi[[2]])
 	dbi.host <- as.character(dbi[[3]])
@@ -43,7 +43,7 @@ shinyServer(function(input, output, session) {
 	observe({
 	   if (!USER$Logged) {
 			output$page <- renderUI({
-				div(class = paste(dbi[[1]],dbi[[2]],dbi[[3]]), do.call(bootstrapPage, c("", UILogin())))
+				div(do.call(bootstrapPage, c("", UILogin())))
 			})
 			tryCatch({
 				if (!is.null(input$Login)) {
@@ -118,7 +118,7 @@ shinyServer(function(input, output, session) {
 
 						
 					if(is.null(input$load)){ # first time in courselist select page
-						session$sendCustomMessage("myCallbackHandler_uiList", "歡迎使用 NTU MOOCs Analytics Platform！")
+						session$sendCustomMessage("myCallbackHandler_uiList", "歡迎使用 NTU MOOCs Data Analytics Platform！請勿重新整理頁面以免登出，謝謝！")
 						USER$selectionlist <- GenSelectionList(con)
 						USER$selectionlist_dff <- isolate(USER$selectionlist)
 						RunEnvironment(session,input,output,USER$Role,USER$selectionlist,rows)
@@ -166,12 +166,13 @@ shinyServer(function(input, output, session) {
 
 		items <-  items[order(items$course_module_order, items$course_lesson_order,items$course_item_order),]
 		itemIds <- c(c("-1", items[items$course_item_type=="Lecture",]$course_item_id), c("-2", items[items$course_item_type=="Reading",]$course_item_id),  c("-3", items[items$course_item_type=="Graded Assessment",]$course_item_id),  c("-4", items[items$course_item_type=="Assessment",]$course_item_id))
-		itemNames <- c("【Lecture】", items[items$course_item_type=="Lecture",]$course_item_name,"【Reading】", items[items$course_item_type=="Reading",]$course_item_name, "【Graded Assessment】", items[items$course_item_type=="Graded Assessment",]$course_item_name, "【Assessment】", items[items$course_item_type=="Assessment",]$course_item_name)
+		itemNames <- c("►【課程視頻】", items[items$course_item_type=="Lecture",]$course_item_name,"►【閱讀】", items[items$course_item_type=="Reading",]$course_item_name, "►【記分測驗】", items[items$course_item_type=="Graded Assessment",]$course_item_name, "►【測驗】", items[items$course_item_type=="Assessment",]$course_item_name)
+		#itemNames <- c("►【課程視頻 Lecture】", items[items$course_item_type=="Lecture",]$course_item_name,"►【閱讀 Reading】", items[items$course_item_type=="Reading",]$course_item_name, "►【記分測驗 Graded Assessment】", items[items$course_item_type=="Graded Assessment",]$course_item_name, "►【測驗 Assessment】", items[items$course_item_type=="Assessment",]$course_item_name)
 		itemsList <- setNames(itemIds, itemNames)
 
 		if (oup == "item.IG") {
 			if(inp == "All"){
-				updateSelectInput(session,oup,choices = c("Course Overall", "All Items", itemsList[which(itemsList=="-3"):length(itemsList)]))
+				updateSelectInput(session,oup,choices = c("►【整體課程 Course Overall】"="Course Overall", "►【全部項目 All Items】"="All Items", itemsList[which(itemsList=="-3"):length(itemsList)]))
 			}else{
 				this.itemsList <- itemsList[which(itemsList=="-3"):length(itemsList)]
 				this.itemIds <- itemIds[which(itemsList=="-3"):length(itemsList)]
@@ -179,14 +180,14 @@ shinyServer(function(input, output, session) {
 			}
 		} else if(oup == "item.DC"){
 			if(inp == "All")
-				updateSelectInput(session,oup,choices = c("All Items", itemsList))
+				updateSelectInput(session,oup,choices = c("全部項目"="All Items", itemsList))
 			else
-				updateSelectInput(session,oup,choices = c("All", "【Course Module】"="-1", modulesList[which(modulesList==inp)],"【Course Item】"="-2", itemsList))
+				updateSelectInput(session,oup,choices = c("全部"="All", "►【單元】"="-1", modulesList[which(modulesList==inp)],"►【項目】"="-2", itemsList))
 		} else if(oup == "item.WC"){
 			if(any(inp==c("A","F","D","Others"))==T)
 				updateSelectInput(session, oup, choices = c())
 			else
-				updateSelectInput(session,oup,choices = c("All", itemsList))
+				updateSelectInput(session,oup,choices = c("全部", itemsList))
 		}else
 			updateSelectInput(session, oup, choices = itemsList, selected = itemIds[grep("^[^-]",itemIds)[1]])
   	}
@@ -956,8 +957,19 @@ shinyServer(function(input, output, session) {
 			    ig.status.perc.Q[, 2] <-
 			      paste0(floor(ig.status.perc.Q[, 2] / nrow(ig) * 100), "%")
 			    colnames(ig.status.perc.Q) <- c("Status", "perc")
-			    
-			    ggplot(ig, aes(x = Status, y = Grade_Overall)) + geom_boxplot() +
+
+			    remove_outliers <- function(x, na.rm = TRUE, ...) {
+				  qnt <- quantile(x, probs=c(.25, .75), na.rm = na.rm, ...)
+				  H <- 1.5 * IQR(x, na.rm = na.rm)
+				  y <- x
+				  y[x < (qnt[1] - H)] <- NA
+				  y[x > (qnt[2] + H)] <- NA
+				  y
+				}
+
+				ig_Q <- ig
+			    ig_Q$`Time Spent (minutes)`<-remove_outliers(ig_Q$`Time Spent (minutes)`)
+			    ggplot(ig_Q, aes(x = Status, y = `Time Spent (minutes)`)) + geom_boxplot() +
 			      geom_text(
 			        data = ig.status.perc.Q,
 			        aes(
@@ -1437,7 +1449,7 @@ shinyServer(function(input, output, session) {
 			  shinyjs::show("sub.WC")
 			})
 
-			path <- "/srv/shiny-server/app-moocs-test/data/"
+			path <- "/srv/shiny-server/app-moocs/data/"
 			all.D.dir <- paste0(path,USER$courseDBName,"_allD.txt")
 			all.F.dir <- paste0(path,USER$courseDBName,"_allF.txt")
 			all.O.dir <- paste0(path,USER$courseDBName,"_allO.txt")
@@ -1451,7 +1463,7 @@ shinyServer(function(input, output, session) {
 			 observe({
 			   print(input$deleteConfirmChoice_recal)
 			   if(!is.null(input$deleteConfirmChoice_recal) && input$deleteConfirmChoice_recal){
-			   	 	try(system(paste("echo ", dbi.shellpassword, " | sudo -S Rscript --vanilla /srv/shiny-server/app-moocs-test/wordcloud_function.R recal", USER$courseDBName)))
+			   	 	try(system(paste("echo ", dbi.shellpassword, " | sudo -S Rscript --vanilla /srv/shiny-server/app-moocs/wordcloud_function.R recal", USER$courseDBName)))
 			   	 	#session$sendCustomMessage("myCallbackHandler_alert", "")
 			   }
 			 })
@@ -1463,7 +1475,7 @@ shinyServer(function(input, output, session) {
 			 observe({
 			   print(input$deleteConfirmChoice_clean)
 			   if(!is.null(input$deleteConfirmChoice_clean) && input$deleteConfirmChoice_clean){
-			   	 	try(system(paste("echo ", dbi.shellpassword, " | sudo -S Rscript --vanilla /srv/shiny-server/app-moocs-test/wordcloud_function.R clean", USER$courseDBName)))
+			   	 	try(system(paste("echo ", dbi.shellpassword, " | sudo -S Rscript --vanilla /srv/shiny-server/app-moocs/wordcloud_function.R clean", USER$courseDBName)))
 			   	 	#session$sendCustomMessage("myCallbackHandler_alert", "")
 			   }
 			 })
@@ -1610,15 +1622,15 @@ shinyServer(function(input, output, session) {
 # UpdateModulelist 
 ###################
 UpdateModulelist <- function(session, output, modulesList){ 
-  updateSelectInput(session, "module.SC", choices = c("All", modulesList, "Others"))
-  updateSelectInput(session, "module.IG", choices = c("All", modulesList))
-  updateSelectInput(session, "module.DC", choices = c("All", modulesList, "Others"))
+  updateSelectInput(session, "module.SC", choices = c("全部"="All", modulesList, "其他"="Others"))
+  updateSelectInput(session, "module.IG", choices = c("全部"="All", modulesList))
+  updateSelectInput(session, "module.DC", choices = c("全部"="All", modulesList, "其他"="Others"))
   updateSelectInput(session, "module.WC", choices = c(
-    "All" = "A",
-    "All Feedback" = "F",
-    "All Discussion" = "D",
+    "全部" = "A",
+    "全部 Feedback" = "F",
+    "全部 Discussion" = "D",
     modulesList,
-    "Others"
+    "其他"="Others"
   ))
 }
 
@@ -1838,10 +1850,10 @@ UILogin <- function() {
 	      html(html="<center>"),
 	      actionButton("Login", "Login"),
 	      hr(),
-	      HTML("<h6>Don't have an account? <a href='http://140.112.107.63:8000/accounts/signup' target='_blank'>Sign Up Here!</a></h6>"),
-	      HTML("<h6><a href='http://140.112.107.63:8000/' target='_blank'>Teacher Management System </a></h6>"),
+	      HTML("<h6>還沒有帳號嗎?<a href='http://140.112.107.63:8000/accounts/signup' target='_blank'> 點我註冊帳號</a></h6>"),
+	      HTML("<h6><a href='http://140.112.107.63:8000/accounts/login' target='_blank'>Teacher Management System 教師管理系統</a></h6>"),
 	      #h6("NTU MOOCs @ 2017 / 建議使用 Chrome 瀏覽器"),
-	      h6("NTU MOOCs TEST @ 2017"),
+	      h6("NTU MOOCs @ 2017"),
 	      html(html="</center>")
 	    )
 	  )#,
@@ -1905,25 +1917,42 @@ RunEnvironment <- function(session,input,output,user,selectionlist,rows){
 			    sidebarMenu(
 			      #menuItem("Dashboard", icon = icon("dashboard"), tabName = "dashboard"),
 			      br(),
-			      menuItem("About", icon = icon("commenting"), tabName = "about",
-			      	menuSubItem("Platform", tabName = "a_platform"),
-			      	menuSubItem("Overview [總覽)", tabName = "a_overview"),
-			      	menuSubItem("Participation [參與]",  tabName = "a_participation"),
-			      	menuSubItem("Engagement [成績]",  tabName = "a_engagement"),
-			      	menuSubItem("Discussion [論壇]",  tabName = "a_discussion"),
-			      	menuSubItem("Word Cloud [文字雲]",  tabName = "a_wordcloud"),
-			      	menuSubItem("Contact us [聯絡]", tabName = "a_contact"),
-			      	menuSubItem("About us [關於]",  tabName = "a_us"),
-			      	menuSubItem("FAQ [問答]",  tabName = "a_faq")
+			      menuItem("關於", icon = icon("commenting"), tabName = "about",
+			      	# menuSubItem("Platform", tabName = "a_platform"),
+			      	# menuSubItem("Overview [總覽)", tabName = "a_overview"),
+			      	# menuSubItem("Participation [參與]",  tabName = "a_participation"),
+			      	# menuSubItem("Engagement [成績]",  tabName = "a_engagement"),
+			      	# menuSubItem("Discussion [論壇]",  tabName = "a_discussion"),
+			      	# menuSubItem("Word Cloud [文字雲]",  tabName = "a_wordcloud"),
+			      	# menuSubItem("Contact us [聯絡]", tabName = "a_contact"),
+			      	# menuSubItem("About us [關於]",  tabName = "a_us"),
+			      	# menuSubItem("FAQ [問答]",  tabName = "a_faq")
+			      	menuSubItem("關於平臺", tabName = "a_platform"),
+			      	menuSubItem("關於總覽", tabName = "a_overview"),
+			      	menuSubItem("關於參與",  tabName = "a_participation"),
+			      	menuSubItem("關於成績",  tabName = "a_engagement"),
+			      	menuSubItem("關於論壇",  tabName = "a_discussion"),
+			      	menuSubItem("關於文字雲",  tabName = "a_wordcloud"),
+			      	menuSubItem("聯絡我們", tabName = "a_contact"),
+			      	menuSubItem("關於我們",  tabName = "a_us"),
+			      	menuSubItem("常見問答",  tabName = "a_faq")
 			      ),
-			      menuItem("Overview", icon = icon("dashboard"), badgeLabel = "總覽", badgeColor = "black",tabName = "overview"),
-			      menuItem("Participation", icon = icon("area-chart"), badgeLabel = "參與", badgeColor = "black",tabName = "participation"),
-			      menuItem("Engagement", icon = icon("pencil"), badgeLabel = "成績", badgeColor = "black",tabName = "engagement"),
-			      menuItem("Discussion", icon = icon("tasks"), badgeLabel = "論壇", badgeColor = "black",tabName = "discussion"),
-			      menuItem("Word Cloud", icon = icon("cloud"), badgeLabel = "文字雲", badgeColor = "black", tabName = "wordcloud"),
+			   #    menuItem("Overview", icon = icon("dashboard"), badgeLabel = "總覽", badgeColor = "black",tabName = "overview"),
+			   #    menuItem("Participation", icon = icon("area-chart"), badgeLabel = "參與", badgeColor = "black",tabName = "participation"),
+			   #    menuItem("Engagement", icon = icon("pencil"), badgeLabel = "成績", badgeColor = "black",tabName = "engagement"),
+			   #    menuItem("Discussion", icon = icon("tasks"), badgeLabel = "論壇", badgeColor = "black",tabName = "discussion"),
+			   #    menuItem("Word Cloud", icon = icon("cloud"), badgeLabel = "文字雲", badgeColor = "black", tabName = "wordcloud"),
+			   #    menuItem("Your MOOCs", icon = icon("bookmark"), tabName = "moocs"),
+				  # menuItem("Teacher System",href="http://140.112.107.63:8000",badgeLabel = "link", badgeColor = "green", icon=icon("user")),hr(),
+				  # menuItem("Logout", icon=icon("sign-out"))
+				  menuItem("總覽", icon = icon("dashboard"), tabName = "overview"),
+			      menuItem("參與", icon = icon("area-chart"), tabName = "participation"),
+			      menuItem("成績", icon = icon("pencil"), tabName = "engagement"),
+			      menuItem("論壇", icon = icon("tasks"), tabName = "discussion"),
+			      menuItem("文字雲", icon = icon("cloud"), tabName = "wordcloud"),
 			      menuItem("Your MOOCs", icon = icon("bookmark"), tabName = "moocs"),
 				  menuItem("Teacher System",href="http://140.112.107.63:8000",badgeLabel = "link", badgeColor = "green", icon=icon("user")),hr(),
-				  menuItem("Logout", icon=icon("sign-out"))
+				  menuItem("登出", icon=icon("sign-out"))
 				),conditionalPanel(
 				      condition = "false",
 				      selectInput("load","load",list())
@@ -2019,6 +2048,7 @@ We would like to hear your voice. Please let us know what to improve!", width = 
                    "
                    .container {padding-left: 10px !important; margin-left: 0px !important;}
                    .navbar-nav {margin-left: 20px !important;}
+                   .help-block{font-size:16px;}
                    .progress-text {position:absolute; top: 70px !important; width:auto !important;}
                    #Q\\.LearnM\\.o .main-svg {height:540px !important;} 
                    #Q\\.Background\\.o .main-svg {height:540px !important;} 
@@ -2046,8 +2076,8 @@ We would like to hear your voice. Please let us know what to improve!", width = 
 			        function(path){
 			        		$(path).css("visibility","visible");
 			        });
-			       Shiny.addCustomMessageHandler("myCallbackHandler_sameCourse",
-			        function(m){$("a:contains(Overview)").click(); //alert("overview~"+m);
+			        Shiny.addCustomMessageHandler("myCallbackHandler_sameCourse",
+			         function(m){$("a:contains(Overview)").click(); //alert("overview~"+m);
 			        });
                    Shiny.addCustomMessageHandler("myCallbackHandler_diffCourse",
 		               function(typeMessage) {
@@ -2162,15 +2192,15 @@ We would like to hear your voice. Please let us know what to improve!", width = 
 	                     column(6, h3("Pre-test 前測問卷", align = "center"), h3(strong(textOutput("Q.pre.o")), align = "center"),
 				            lapply(c(10:24), function(i) { 
 	  							plotlyOutput(paste0('Q.score.pre.o', i))
-	  						})
+	  						}),br(), br(), br()
 				           
 				          ),
 						 column(6, h3("Post-test 後測問卷", align = "center"), h3(strong(textOutput("Q.post.o")), align = "center"),
 							lapply(c(1:21)[!c(1:21) %in% c(6,7,13:16)], function(i) { 
 	  							plotlyOutput(paste0('Q.score.post.o', i))
-	  						 })
+	  						 }),br(), br(), br()
 				         ),
-			             dataTableOutput('Q.Num.o'),br(), br(), br(), br(),
+			             dataTableOutput('Q.Num.o'),br(), br(), br(), 
 		             width=12)
 		         )
             )
@@ -2183,33 +2213,37 @@ We would like to hear your voice. Please let us know what to improve!", width = 
      # Use a fluid Bootstrap layout
      fluidPage(
        # Give the page a title
-       titlePanel(h2("Participation（參與狀況）", HTML("<br><br>"), align = "center")),
+       titlePanel(h2("參與狀況（Participation）", HTML("<br><br>"), align = "center")),
        #hr(),
        # Generate a row with a sidebar
-       box(title="課程項目選單",status="primary",solidHeader = TRUE,
+       box(title="項目選單",status="primary",solidHeader = TRUE,
            selectInput(
              "module.SC",
-             "Modules",
-             choices = c("All", modulesList, "Others"),
+             #"Modules",
+             "單元：",
+             choices = c("全部"="All", modulesList, "其他"="Others"),
              selected = "All"
            ),
            selectInput(
              "item.SC",
-             "Items:",
+             #"Items:",
+             "項目：",
              choices = c(),
              selected = ""
            ),
            #hr(),
            helpText(HTML(
-             paste(
-             	   #"Source: NTU MOOCs",
-                   #"*Modules（課程單元）",
-                   #"*Item（課程項目）",
-                   "*W4 代表 Week4, etc.",
+             paste( "",
+                    "►「單元」乃每星期老師開課的主題",
+                    "►「項目」乃每星期老師開課主題裡面的子項目",
+					"►綠線為「開始」使用課程，紅線為「完成」課程",
+					"►藉此圖表可以了解此課程在不同時間觀賞的人數",
+					"►將滑鼠滑到圖表中的點，可以看到更多的細項",
+                    "►W4 代表 Week4, etc.",
                    " ",
                    sep = "<br>")
            )),
-		width=3, height = "480px"),
+		width=3, height = "550px"),
 
 	    tags$head(
 	        tags$style(type="text/css",
@@ -2227,7 +2261,7 @@ We would like to hear your voice. Please let us know what to improve!", width = 
            div(
              id = "sub.SC",
              box(title="課程項目參與人數（進入 & 離開）",status="primary",solidHeader = TRUE,
-            	 plotlyOutput("plotSC.Histogram", height = "400px",width="auto"),
+            	 plotlyOutput("plotSC.Histogram", height = "400px",width="100%"),
              width=9, height = "480px"),
              br(),
 	         box(title="課程項目參與人數資料",status="primary",solidHeader = TRUE,width=12,
@@ -2246,27 +2280,31 @@ We would like to hear your voice. Please let us know what to improve!", width = 
   tabItem(tabName = "engagement",
    shinyUI(fluidPage(
      fluidRow(
-       titlePanel(h2("Engagement（學習成績）",HTML("<br><br>"), align = "center")),
+       titlePanel(h2("學習成績（Engagement）",HTML("<br><br>"), align = "center")),
        #hr(),
-      box(title="課程項目選單",status="primary",solidHeader = TRUE, width=3,height="570px",
+      box(title="項目選單",status="primary",solidHeader = TRUE, width=3,height="570px",
            selectInput(
              "module.IG",
-             "Modules",
-             choices = c("All", modulesList),
+             #"Modules",
+             "單元：",
+             choices = c("全部"="All", modulesList),
              selected = "All"
            ),
            selectInput(
              "item.IG",
-             "Items:",
+             #"Items:",
+             "項目：",
              choices = c(),
              selected = ""
            ),
            #hr(),
            helpText(HTML(paste(
-             #"Source: NTU MOOCs",
-             "*趨勢線:"," 表現資料的線性走勢，判別變數(學習時間)與應變數(成績)之間是正相關(正斜率)或是負相關(負斜率)",
+             "",
+             "►Verified: 通過並取得證書",
+             "►Passed: 通過未取得證書",
+             "►Not passed: 未通過",
+             "►趨勢線表現資料的線性走勢，判別變數（學習時間）與成績不通過（橘色）、通過（藍色）、認證通過（綠色）之間的關聯性是正相關（正斜率）或是負相關（負斜率）",
              " ",
-             "*verified: 通過並取得證書",
              sep = "<br>"
            ))),
            tags$head(
@@ -2303,21 +2341,21 @@ We would like to hear your voice. Please let us know what to improve!", width = 
 	         width=9, height="570px"),
 
              #HTML("<hr>"),
-             box(title="通過狀態與成績",status="primary",solidHeader = TRUE,
-             	plotlyOutput("plotIG.Boxplot.Q", height ="350px"),
+             box(title="學習時間與通過狀態",status="primary",solidHeader = TRUE,
+             	plotlyOutput("plotIG.Boxplot.Q", height ="350px",width="100%"),
              	width=12, height="100%"),
              #HTML("<hr><br><br>"),
 
              box(title="國籍與成績",status="primary",solidHeader = TRUE,
 	             sliderInput(
 	               "slider.sd.D.IG",
-	               "Standard Deviation Filter:",
+	               "標準差門檻：", #"Standard Deviation Filter:",
 	               min = 0,
 	               max = 1,
 	               value = 0.3,
 	               step = 0.01
 	             ),
-	             plotlyOutput("plotIG.Boxplot.D", height ="400px"), #, width="780px"
+	             plotlyOutput("plotIG.Boxplot.D", height ="400px",width="100%"), #, width="780px"
 	         width=12, height="100%"),
              
              #HTML("<hr><br><br>"),
@@ -2325,13 +2363,13 @@ We would like to hear your voice. Please let us know what to improve!", width = 
              box(title="語言與成績",status="primary",solidHeader = TRUE,
 	             sliderInput(
 	               "slider.sd.L.IG",
-	               "Standard Deviation Filter:",
+	               "標準差門檻：", #"Standard Deviation Filter:",
 	               min = 0,
 	               max = 1,
 	               value = 0.3,
 	               step = 0.01
 	             ),
-	             plotlyOutput("plotIG.Boxplot.L", height ="400px"),
+	             plotlyOutput("plotIG.Boxplot.L", height ="400px",width="100%"),
 	         width=12, height="100%"),  
              #, width="780px"
              #HTML("<br><br><br><hr>"),
@@ -2353,31 +2391,8 @@ We would like to hear your voice. Please let us know what to improve!", width = 
    shinyUI(fluidPage(
      fluidRow(
      	 tags$style(type="text/css","#plotDC.Scatterplot > .main-svg{height:370px !important;}"),
-       titlePanel(h2("Discussion（論壇回饋）",HTML("<br><br>"), align = "center")),
-       #hr(),
-       box(title="課程項目選單",status="primary",solidHeader = TRUE,
-           useShinyjs(),
-           selectInput(
-             "module.DC",
-             "Modules",
-             choices = c("All", modulesList, "Others"),
-             selected = "All"
-           ),
-           selectInput("item.DC",
-                       "Items",
-                       choices = c(),
-                       selected = ""),
-           checkboxInput('plot.DC_top30', 'Only Show Top 30 Discussions', TRUE),
-           #hr(),
-           helpText(HTML(paste(
-             #"Source: NTU MOOCs",
-             "*右圖中每一筆橫列代表課程論壇的一個問題與該問題的回應",
-             " ",
-             sep = "<br>"
-           ))),
-           width = 3, height="430px"
-         ),
-         
+       titlePanel(h2("論壇回饋（Discussion）",HTML("<br><br>"), align = "center")),
+       	 #hr(),  
          #mainPanel(scatterD3Output("gdt1"))
            withMathJax(),
            h5(textOutput("msg.DC"), align = "center"),
@@ -2385,34 +2400,61 @@ We would like to hear your voice. Please let us know what to improve!", width = 
              id = "sub.DC",
              box(title="問答時序與熱絡度",status="primary",solidHeader = TRUE,
 	             div(id = "busy.DC",
-	                 p("Calculation in progress...", align = "center")),
-	             plotlyOutput("plotDC.Scatterplot", height ="350px",width="auto"),
-	          width = 9, height="430px"),
+	                p("Calculation in progress...", align = "center")),
+	             	column(3,#h4("課程項目選單"),
+	             	   selectInput(
+			             "module.DC",
+			             #"Modules",
+			             "單元：",
+			             choices = c("全部"="All", modulesList, "其他"="Others"),
+			             selected = "All"
+			           ),
+			           selectInput("item.DC",
+			                       #"Items",
+			                       "項目：",
+			                       choices = c(),
+			                       selected = ""),
+			           checkboxInput('plot.DC_top30', '列出前30筆', TRUE),
+			           #hr(),
+			           helpText(HTML(paste(
+			             "",
+			             "►「+」代表問題，而「□」代表回答，兩者皆可對應到下面的的時間軸",
+			             "►藉由看問題被回答了多少次（多少個「□」），可以了解問題在學生之間的共鳴性",
+			             "►藉由看問題與回答之間的間隔，可以了解問題對於學生的急迫性與重要性",
+			             "►縱軸代表著題目的題號，會與某題目一對一對應",
+			             " ",
+			             sep = "<br>"
+			           )))),
+	             	column(1),
+	             	column(8,
+						plotlyOutput("plotDC.Scatterplot", height ="400px",width="auto")
+	             	),
+	         	width = 12, height="550px"),
+
              HTML("<br>"),
              textOutput("summary.DC"),
              HTML("<br><hr>"),
 
-
-	         box(title="前幾名活躍學生人數",status="primary",solidHeader = TRUE,
-	           useShinyjs(),
-	           sliderInput(
-	             "slider.max.activeStudents",
-	             "Number of Active Students",
-	             min = 1,
-	             max = 10,
-	             value = 5
-	           ),
-	           helpText(HTML(paste( 
-	           	 "",
-	             "*右圖中 User(學生) 與 Q(問題) 的連線代表該學生回答了該問題，連線越粗代表回答該題次數越多",
-	             "",
-	             sep = "<br>"
-	           ))),
-	           width = 3, height="660px"
-	         ),
              box(title="學生回答活躍貢獻度",status="primary",solidHeader = TRUE,
-	             plotOutput("plotDC.Circlizeplot", height ="600px",width="600px"),
-	          width = 9, height="660px"),
+             		column(3, #h3("前幾名活躍學生人數"),
+             			sliderInput(
+				             "slider.max.activeStudents",
+				             "前幾名活躍學生人數",
+				             #"Number of Active Students",
+				             min = 1,
+				             max = 10,
+				             value = 3
+				           ),
+				           helpText(HTML(paste( 
+				           	 "",
+				             "*User(學生) 與 Q(問題) 的連線代表該學生回答了該問題，連線越粗代表回答該題次數越多",
+				             "",
+				             sep = "<br>"
+				          )))),
+             		column(1),
+             		column(8,
+	             plotOutput("plotDC.Circlizeplot", height ="700px",width="700px")),
+	          width = 12, height="760px"),
              HTML("<br><hr>"),
              
 
@@ -2427,7 +2469,7 @@ We would like to hear your voice. Please let us know what to improve!", width = 
 	             ),
 	             plotlyOutput("plotDC.Scatterplot.Std", width ="85%"),
 	             width = 12, height="100%"), 
-	         box(title="課程項目選單",status="primary",solidHeader = TRUE,
+	         box(title="原始內容",status="primary",solidHeader = TRUE,
 	             br(),
 	             div(style="display: inline-block;vertical-align:top;width:220px;", downloadButton('downloadData.DC', 'Download DataTable')),
 	             div(style="display: inline-block;vertical-align:top;width:600px;",radioButtons(
@@ -2447,72 +2489,119 @@ We would like to hear your voice. Please let us know what to improve!", width = 
    shinyUI(fluidPage(
      fluidRow(
        titlePanel(h2(
-         "Word Cloud（文字雲）", HTML("<br><br>"), align = "center"
+         "文字雲（Word Cloud）", HTML("<br><br>"), align = "center"
        )),
        #hr(),
-       box(title="課程項目選單",status="primary",solidHeader = TRUE,
-           useShinyjs(),
-           selectInput(
-             "module.WC",
-             "Modules",
-             choices = c(
-               "All" = "A",
-               "All Feedback" = "F",
-               "All Discussion" = "D",
-               modulesList,
-               "Others"
-             ),
-             selected = "A"
-           ),
-           # selectInput("item.WC",
-           #             "Items",
-           #             choices = c()),
-           #hr(),
-           # sliderInput("freq",
-           #             "Minimum Frequency:",
-           #             min = 1,  max = 50, value = 15),
-           sliderInput(
-             "slider.max.WC",
-             "Maximum Number of Words:",
-             min = 1,
-             max = 100,
-             value = 30
-           ),
-           hr(),
-           # actionButton("recal", "Recal"),
-           # actionButton("clean", "Clean"),
-           br(),
-           helpText(HTML(paste(
-             #"Source: NTU MOOCs",
-             #"*Processing time of the wordcloud : 3~5 sec.",
-              "*產生文字雲約需 3~5 秒",
-              "",
-              "*文字大小代表出現頻率",
-             sep = "<br>"
-           ))),
-           tags$head(
-             tags$style("#plotWC{height:70vh !important;}.actionButton{min-width:100% !important;}"),
-              tags$script(
-                HTML('Shiny.addCustomMessageHandler("myCallbackHandler_recal",
-                     function(message) {
-                     Shiny.onInputChange("deleteConfirmChoice_recal",eval(message.value));});
-                     Shiny.addCustomMessageHandler("myCallbackHandler_clean",
-                     function(message) {
-                     Shiny.onInputChange("deleteConfirmChoice_clean",eval(message.value));});
-              '))
-           ),
-           width = 3, height="460px"
-         ),
+       # box(title="課程項目選單",status="primary",solidHeader = TRUE,
+       #     useShinyjs(),
+       #     selectInput(
+       #       "module.WC",
+       #       "Modules",
+       #       choices = c(
+       #         "All" = "A",
+       #         "All Feedback" = "F",
+       #         "All Discussion" = "D",
+       #         modulesList,
+       #         "Others"
+       #       ),
+       #       selected = "A"
+       #     ),
+       #     # selectInput("item.WC",
+       #     #             "Items",
+       #     #             choices = c()),
+       #     #hr(),
+       #     # sliderInput("freq",
+       #     #             "Minimum Frequency:",
+       #     #             min = 1,  max = 50, value = 15),
+       #     sliderInput(
+       #       "slider.max.WC",
+       #       "Maximum Number of Words:",
+       #       min = 1,
+       #       max = 100,
+       #       value = 30
+       #     ),
+       #     hr(),
+       #     # actionButton("recal", "Recal"),
+       #     # actionButton("clean", "Clean"),
+       #     br(),
+       #     helpText(HTML(paste(
+       #       #"Source: NTU MOOCs",
+       #       #"*Processing time of the wordcloud : 3~5 sec.",
+       #        "*產生文字雲約需 3~5 秒",
+       #        "",
+       #        "*文字大小代表出現頻率",
+       #       sep = "<br>"
+       #     ))),
+       #     tags$head(
+       #       tags$style("#plotWC{height:70vh !important;}.actionButton{min-width:100% !important;}"),
+       #        tags$script(
+       #          HTML('Shiny.addCustomMessageHandler("myCallbackHandler_recal",
+       #               function(message) {
+       #               Shiny.onInputChange("deleteConfirmChoice_recal",eval(message.value));});
+       #               Shiny.addCustomMessageHandler("myCallbackHandler_clean",
+       #               function(message) {
+       #               Shiny.onInputChange("deleteConfirmChoice_clean",eval(message.value));});
+       #        '))
+       #     ),
+       #     width = 3, height="460px"
+       #   ),
          
          # Show Word Cloud
          
            h5(textOutput("msg.WC"), align = "center"),
            
            div(
-             id = "sub.WC",
+             id = "sub.WC", useShinyjs(),
              box(title="文字雲",status="primary",solidHeader = TRUE,
              	div(id = "busy.WC",p("Rendering... (3~5 seconds)", align = "center")),
-             	plotOutput("plot.WC") ,width = 9, height="460px"
+				column(3,
+					selectInput(
+			             "module.WC",
+			             #"Modules",
+			             "單元：",
+			             choices = c(
+			               "全部" = "A",
+			               "全部 Feedback" = "F",
+			               "全部 Discussion" = "D",
+			               modulesList,
+			               "其他"
+			             ),
+			             selected = "A"
+		           	),sliderInput(
+			             "slider.max.WC",
+			             "Maximum Number of Words:",
+			             min = 1,
+			             max = 100,
+			             value = 30
+			           ),
+			           hr(),
+			           # actionButton("recal", "Recal"),
+			           # actionButton("clean", "Clean"),
+			           br(),
+			           helpText(HTML(paste(
+			             #"Source: NTU MOOCs",
+			             #"*Processing time of the wordcloud : 3~5 sec.",
+			              "",
+			              "►產生文字雲約需 3~5 秒",
+			              "►文字大小代表出現頻率",
+			              "",
+			             sep = "<br>"
+			           ))),
+			           tags$head(
+			             tags$style("#plotWC{height:70vh !important;}.actionButton{min-width:100% !important;}"),
+			              tags$script(
+			                HTML('Shiny.addCustomMessageHandler("myCallbackHandler_recal",
+			                     function(message) {
+			                     Shiny.onInputChange("deleteConfirmChoice_recal",eval(message.value));});
+			                     Shiny.addCustomMessageHandler("myCallbackHandler_clean",
+			                     function(message) {
+			                     Shiny.onInputChange("deleteConfirmChoice_clean",eval(message.value));});
+			              '))
+			           )
+		           	),
+             	column(1),
+             	column(8,plotOutput("plot.WC",height="580px"))
+             	 ,width = 12, height="660px"
              ),
             box(title="關鍵字次數表",status="primary",solidHeader = TRUE,
 	             HTML("<center><h3>Word Freq Table</h3></center>"),
