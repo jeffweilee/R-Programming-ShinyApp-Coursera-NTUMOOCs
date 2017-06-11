@@ -374,8 +374,8 @@ shinyServer(function(input, output, session) {
 				    session$sendCustomMessage("myCallbackHandler_show", "#content_o > #ql")
 				    session$sendCustomMessage("myCallbackHandler_show", "#content_o > #ql > #ql_corr")
 				    session$sendCustomMessage("myCallbackHandler_visible", "#content_o > .plotly")
-
-					output$Q.o <- renderText({paste("Users' Information from Questionaire 問卷資料 (", as.character(dbGetQuery(conn = con, statement = "select count(*) FROM `questionaire`"))," 份)")}) 
+				    #Users' Information from Questionaire 
+					output$Q.o <- renderText({paste("問卷資料 (", as.character(dbGetQuery(conn = con, statement = "select count(*) FROM `questionaire`"))," 份)")}) 
 					output$Q.Gender.o <- renderPlotly({
 						Q.Gender <- dbGetQuery(conn = con, statement = paste0("SELECT `Q1_您的性別`,count(*) as Number FROM `questionaire` group by `Q1_您的性別`"))			
 						if(ncol(Q.Gender) > 0){
@@ -518,13 +518,20 @@ shinyServer(function(input, output, session) {
 				if(nrow(dbGetQuery(conn = con, statement = paste0("SHOW TABLES LIKE 'pre_questionaire'"))) > 0 && dbGetQuery(conn = con, statement = paste0("SELECT COUNT(*) FROM `pre_questionaire`")) > 0){
 					output$Q.pre.o <- renderText({paste("(", as.character(dbGetQuery(conn = con, statement = "select count(*) FROM `pre_questionaire`"))," 份)")}) 
 					output$Q.post.o <- renderText({paste("(", as.character(dbGetQuery(conn = con, statement = "select count(*) FROM `post_questionaire`"))," 份)")}) 
-			        lapply(c(10:24), function(i) { 
+			        
+			        pre.post.index = data.frame(c(10:24),c(1:21)[!c(1:21) %in% c(6,7,13:16)])
+
+			        lapply(pre.post.index[,1], function(i) { 
 					  output[[paste0('Q.score.pre.o', i)]] = renderPlotly({
 					    cn <- dbGetQuery(conn = con, paste0("SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS where table_name='pre_questionaire' and column_name like '%Q",i,"_%'" ))[1,1]
 					    #session$sendCustomMessage("myCallbackHandler_alert", as.character(cn))
 					    Q.title <- as.character(dbGetQuery(conn = con, paste("select ", cn , " from pre_questionaire where ", cn , " like 'Q",i,"_%'",sep="")))
 					    Q.title <- substr(Q.title, 0, gregexpr("_",Q.title )[[1]][2]-1)
-					    if(nchar(Q.title) > 35){ Q.title <-paste(substr(Q.title, 0, 35), "...") }
+					    if(nchar(Q.title) > 30){Q.title <-paste(substr(Q.title, 0, 30), "...") }
+					    score <- as.vector(dbGetQuery(conn = con, paste0("select ", cn , " from pre_questionaire where ", cn , " not like 'Q",i,"%'")))
+						score <- score[score %in% c(1:5)]
+						Q.score.pre <<- rbind(Q.score.pre,score)
+						
 					    Q.score <- dbGetQuery(conn = con, paste0("select ", cn , ", count(*) from pre_questionaire where ", cn , " not like 'Q",i,"%' group by ", cn , "  order by count(*) desc"))
 						Q.score <-Q.score[Q.score[,1] %in% c(1:5),]
 						if(!all(c(1:5) %in% Q.score[,1])){
@@ -533,6 +540,7 @@ shinyServer(function(input, output, session) {
 						  Q.score <- rbind(Q.score, vac)
 						}
 						Q.score <- Q.score[order(Q.score[,1]),]
+						
 					    sum<-sum(Q.score[,2])
 					    Q.score<-cbind(Q.score,(Q.score[,2]/sum)*100)
 					    names(Q.score)<-c("Students score","Number of People","Percentage")
@@ -542,13 +550,12 @@ shinyServer(function(input, output, session) {
 					    })
 					}) 
 
-					lapply(c(1:21)[!c(1:21) %in% c(6,7,13:16)], function(i) { 
+					lapply(pre.post.index[,2], function(i) { 
 					  output[[paste0('Q.score.post.o', i)]] = renderPlotly({
 					    cn <- dbGetQuery(conn = con, paste0("SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS where table_name='post_questionaire' and column_name like '%Q",i,"_%'" ))[1,1]
-					    #session$sendCustomMessage("myCallbackHandler_alert", as.character(cn))
 					    Q.title <- as.character(dbGetQuery(conn = con, paste("select ", cn , " from post_questionaire where ", cn , " like 'Q",i,"_%'",sep="")))
 					    Q.title <- substr(Q.title, 0, gregexpr("_",Q.title )[[1]][2]-1)
-					    if(nchar(Q.title) > 35){ Q.title <-paste(substr(Q.title, 0, 35), "...") }
+					    if(nchar(Q.title) > 19){Q.title <-paste(substr(Q.title, 0, 19), "...") }
 					    Q.score <- dbGetQuery(conn = con, paste0("select ", cn , ", count(*) from post_questionaire where ", cn , " not like 'Q",i,"%' group by ", cn , "  order by count(*) desc"))
 					    Q.score <-Q.score[Q.score[,1] %in% c(1:5),]
 						if(!all(c(1:5) %in% Q.score[,1])){
@@ -557,6 +564,7 @@ shinyServer(function(input, output, session) {
 						  Q.score <- rbind(Q.score, vac)
 						}
 						Q.score <- Q.score[order(Q.score[,1]),]
+						#Q.score.post <- rbind(Q.score.post,Q.score)
 					    sum<-sum(Q.score[,2])
 					    Q.score<-cbind(Q.score,(Q.score[,2]/sum)*100)
 					    names(Q.score)<-c("Students score","Number of People","Percentage")
@@ -565,6 +573,29 @@ shinyServer(function(input, output, session) {
 					    ggplotly()                                                                                                  
 					    })
 					}) 
+
+					lapply(c(1:nrow(pre.post.index)),function(i){
+						i.pre <- pre.post.index[i,1]
+						i.post <- pre.post.index[i,2]
+						cn.pre <- dbGetQuery(conn = con, paste0("SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS where table_name='pre_questionaire' and column_name like '%Q",i.pre,"_%'" ))[1,1]
+					    cn.post <- dbGetQuery(conn = con, paste0("SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS where table_name='post_questionaire' and column_name like '%Q",i.post,"_%'" ))[1,1]
+					    score.pre <- as.numeric(na.omit(dbGetQuery(conn = con, paste0("select ", cn.pre , " from pre_questionaire"))[-1,]))
+					    score.post <- as.numeric(na.omit(dbGetQuery(conn = con, paste0("select ", cn.post , " from post_questionaire"))[-1,]))
+
+					    ttest <- t.test(score.post,score.pre)
+						#pvalue <- formatC(as.double(substr(ttest[[3]],0,attr(regexpr("(?<=\\.)0+",ttest[[3]],perl=T),"match.length")+5)),format="e",digit=1)
+						pvalue <- formatC(ttest[[3]],format="e",digit=1)
+						t <- ttest[[1]]
+						significance <- ifelse(ttest[[3]]<=0.05,"顯著","不顯著")
+						updown <- ifelse(t!=0, ifelse(significance=="顯著" ,ifelse(t<0,"下降","上升"),""),"")
+						output[[paste0('Q.score.ttest.o', i)]] = renderUI({
+							if(significance=="顯著")
+								HTML(paste0("<div style='height:350px;background-color:palegreen;'><br><br><br><br><br><center>",significance,updown,"<br>[p值:",pvalue,"]</center></div>"))
+							else
+								HTML(paste0("<div style='height:350px;background-color:#f8766d;'><br><br><br><br><br><center>",significance,updown,"<br>[p值:",pvalue,"]</center></div>"))
+							
+						})
+					})
 
 				}else{
                     session$sendCustomMessage("myCallbackHandler_hide", "#content_o > #ql > #ql_corr")
@@ -1244,17 +1275,22 @@ shinyServer(function(input, output, session) {
 				dbGetQuery(conn = con, "SET NAMES 'utf8'")
 				activeStudents <- dbGetQuery(conn = con, 
 				paste("select c.discussion_question_title, d.taiwan_discussions_user_id from (SELECT a.discussion_question_title, b.taiwan_discussions_user_id FROM `discussion_answer` b inner join `discussion_question` a on b.discussion_question_id=a.discussion_question_id)c inner join (select taiwan_discussions_user_id from discussion_answer group by `taiwan_discussions_user_id` order by count(`taiwan_discussions_user_id`) desc limit ",input$slider.max.activeStudents,")d on c.taiwan_discussions_user_id = d.taiwan_discussions_user_id"))
-
+				activeStudents <- merge(activeStudents,as.data.frame(table(activeStudents[,1])),by.x="discussion_question_title", by.y="Var1")
+				totalFreq <- sum(table(activeStudents[,1]))
 				#Create data
-				question=paste("Q",substr(activeStudents[,1],0,5), sep="")
-				user=paste("User", substr(activeStudents[,2],0,2) , sep="")
+				question=paste("[",substr(activeStudents[,1],0,floor(58*activeStudents[,3]/totalFreq)),"...]", sep="")
+				user=paste("User", substr(activeStudents[,2],0,2),"..." , sep="")
 				dat <- data.frame(user,question)
 				dat <- with(dat, table(user,question))
 
+				output$text.question.title.DC <- renderUI({
+					HTML(paste("<br>右圖所示完整題目：<br>",paste0("►[",unique(activeStudents[,1]),"]",collapse="<br>"),sep="<br>"))
+				})
+
 				# Charge the circlize library
 				library(circlize)
-
 				# Make the circular plot
+				par(cex=1.5,mar=c(0,0,0,0))
 				chordDiagram(as.data.frame(dat), transparency = 0.5)
 			})
 
@@ -1971,7 +2007,7 @@ RunEnvironment <- function(session,input,output,user,selectionlist,rows){
 
 						}); 
 					$(".fa-angle-left").toggleClass("fa-angle-down"); $(".content").css("min-height","900px"); 
-					setTimeout(function(){$("section > ul > li:nth-child(2) > a").click();},700); 
+					// setTimeout(function(){$("section > ul > li:nth-child(2) > a").click();},700); // about menusubitem
 					$("section > ul > li:nth-child(2) > ul > li:nth-child(1) > a").click(); 
 					$("section > ul > li:nth-last-child(1) > a").click(function(){alert(\'Logout!\');location.reload(true);});')),
 				tags$style(HTML('hr{background-color:darkgrey; color:darkgrey; height:1px;} 
@@ -2045,19 +2081,20 @@ We would like to hear your voice. Please let us know what to improve!", width = 
                fluidPage(
                  tags$head(tags$style( 
                    type = "text/css",HTML(
-                   "
+                   "//.box-body{text-align:center;}
+                    //busy_on {visibility: hidden;}
                    .container {padding-left: 10px !important; margin-left: 0px !important;}
                    .navbar-nav {margin-left: 20px !important;}
                    .help-block{font-size:16px;}
                    .progress-text {position:absolute; top: 70px !important; width:auto !important;}
+                   //#ql_corr .js-plotly-plot{border-top: 3px solid #3c8dbc; padding-top: 40px; margin-top: 80px;}
+                   #ql_corr > .col-sm-2 > div {height:400px;}
                    #Q\\.LearnM\\.o .main-svg {height:540px !important;} 
                    #Q\\.Background\\.o .main-svg {height:540px !important;} 
                    .shiny-output-error {font-weight: 500; font-size: 16px; color: red;}
                    .shiny-output-error { visibility: hidden; }
                    .shiny-output-error:before { visibility: hidden; }
-                    //.box-body{text-align:center;}
-                   #busy_on {visibility: hidden;}
-                   #ql_corr .js-plotly-plot{border-top: 3px solid #3c8dbc; padding-top: 40px; margin-top: 80px;}
+                   #text\\.question\\.title\\.DC{height:350px;overflow-y:auto;font-size:16px;}
                    "
                  )),tags$script(HTML(
 			      'Shiny.addCustomMessageHandler("myCallbackHandler_alert",
@@ -2154,7 +2191,7 @@ We would like to hear your voice. Please let us know what to improve!", width = 
                     h5(textOutput("nonpass.o"), align = "left"),
                     #br(),hr()
                     width=3,height=130) , #hr(),
-	            box(title="通過項目 [verified passed： 通過並取得證書]",status="primary",solidHeader = TRUE,
+	            box(title="通過項目 [verified passed：通過並取得證書] [passed：通過但未取得證書] [not passed：未通過]",status="primary",solidHeader = TRUE,
 	             	plotlyOutput("plotO.pass_item"), br(),
 	             	width=8),#hr(),
 	       		box(title="評分回饋 [1-5分] [軸標籤代表人數]",status="primary",solidHeader = TRUE,
@@ -2189,17 +2226,20 @@ We would like to hear your voice. Please let us know what to improve!", width = 
                  ),
                  div(id="ql_corr",
 	                 box(title="問卷題目 [1-5分] [每一列的左圖和右圖爲前測和後測的對應題目]",status="primary",solidHeader = TRUE,
-	                     column(6, h3("Pre-test 前測問卷", align = "center"), h3(strong(textOutput("Q.pre.o")), align = "center"),
+	                     column(5, h3("Pre-test 前測問卷", align = "center"), h3(strong(textOutput("Q.pre.o")), align = "center"),
 				            lapply(c(10:24), function(i) { 
 	  							plotlyOutput(paste0('Q.score.pre.o', i))
 	  						}),br(), br(), br()
 				           
 				          ),
-						 column(6, h3("Post-test 後測問卷", align = "center"), h3(strong(textOutput("Q.post.o")), align = "center"),
+						 column(5, h3("Post-test 後測問卷", align = "center"), h3(strong(textOutput("Q.post.o")), align = "center"),
 							lapply(c(1:21)[!c(1:21) %in% c(6,7,13:16)], function(i) { 
 	  							plotlyOutput(paste0('Q.score.post.o', i))
 	  						 }),br(), br(), br()
-				         ),
+				         ),column(2, h3("前後測檢定", align = "center"), br(),br(),
+				            lapply(c(1:15), function(i) { 
+	  							htmlOutput(paste0('Q.score.ttest.o', i), style="height:400px;")
+	  						}),br(), br(), br()),
 			             dataTableOutput('Q.Num.o'),br(), br(), br(), 
 		             width=12)
 		         )
@@ -2236,7 +2276,8 @@ We would like to hear your voice. Please let us know what to improve!", width = 
              paste( "",
                     "►「單元」乃每星期老師開課的主題",
                     "►「項目」乃每星期老師開課主題裡面的子項目",
-					"►綠線為「開始」使用課程，紅線為「完成」課程",
+					"►綠線為「開始」任一項目",
+					"►紅線為「完成」任一項目",
 					"►藉此圖表可以了解此課程在不同時間觀賞的人數",
 					"►將滑鼠滑到圖表中的點，可以看到更多的細項",
                     "►W4 代表 Week4, etc.",
@@ -2266,7 +2307,7 @@ We would like to hear your voice. Please let us know what to improve!", width = 
              br(),
 	         box(title="課程項目參與人數資料",status="primary",solidHeader = TRUE,width=12,
 	             HTML("<br><br>"),
-	             div(style="display: inline-block;vertical-align:top;width:220px;",downloadButton('downloadData.SC', 'Download DataTable')),
+	             div(style="display: inline-block;vertical-align:top;width:220px;",downloadButton('downloadData.SC', '下載資料表')),
 	             div(style="display: inline-block;vertical-align:top;width:600px;",radioButtons(
 	               "radioBtn.SC",
 	               "Data Encoding:",
@@ -2376,7 +2417,7 @@ We would like to hear your voice. Please let us know what to improve!", width = 
 
              box(title="學習時間與成績資料",status="primary",solidHeader = TRUE,width=12,
 	             br(),
-	             	div(style="display: inline-block;vertical-align:top;width:220px;", downloadButton('downloadData.IG', 'Download DataTable')),
+	             	div(style="display: inline-block;vertical-align:top;width:220px;", downloadButton('downloadData.IG', '下載資料表')),
 	             div(style="display: inline-block;vertical-align:top;width:600px;", radioButtons(
 	               "radioBtn.IG",
 	               "Data Encoding:",
@@ -2447,10 +2488,11 @@ We would like to hear your voice. Please let us know what to improve!", width = 
 				           ),
 				           helpText(HTML(paste( 
 				           	 "",
-				             "*User(學生) 與 Q(問題) 的連線代表該學生回答了該問題，連線越粗代表回答該題次數越多",
+				             "►學生 (User) 與 論壇問題 (Q) 的連線：代表該學生回答了該問題",
+				             "►連線越粗：代表學生 (User) 回答該論壇問題 (Q) 次數越多,社群貢獻性越大",
 				             "",
 				             sep = "<br>"
-				          )))),
+				          ))),hr(),htmlOutput("text.question.title.DC")),
              		column(1),
              		column(8,
 	             plotOutput("plotDC.Circlizeplot", height ="700px",width="700px")),
@@ -2471,7 +2513,7 @@ We would like to hear your voice. Please let us know what to improve!", width = 
 	             width = 12, height="100%"), 
 	         box(title="原始內容",status="primary",solidHeader = TRUE,
 	             br(),
-	             div(style="display: inline-block;vertical-align:top;width:220px;", downloadButton('downloadData.DC', 'Download DataTable')),
+	             div(style="display: inline-block;vertical-align:top;width:220px;", downloadButton('downloadData.DC', '下載資料表')),
 	             div(style="display: inline-block;vertical-align:top;width:600px;",radioButtons(
 	               "radioBtn.DC",
 	               "Data Encoding:",
@@ -2606,7 +2648,7 @@ We would like to hear your voice. Please let us know what to improve!", width = 
             box(title="關鍵字次數表",status="primary",solidHeader = TRUE,
 	             HTML("<center><h3>Word Freq Table</h3></center>"),
 	             br(),
-	             div(style="display: inline-block;vertical-align:top;width:220px;",downloadButton('downloadData.WC.WF', 'Download Word Freqency')),
+	             div(style="display: inline-block;vertical-align:top;width:220px;",downloadButton('downloadData.WC.WF', '下載關鍵字次數表')),
 	             div(style="display: inline-block;vertical-align:top;width:600px;",
 	             	radioButtons(
 	               "radioBtn.WC",
@@ -2620,7 +2662,7 @@ We would like to hear your voice. Please let us know what to improve!", width = 
             box(title="原始內容",status="primary",solidHeader = TRUE,
 	             HTML("<center><h3>Original Content Table</h3></center>"),
 	             br(),
-	             div(style="display: inline-block;vertical-align:top;width:220px;",downloadButton('downloadData.WC.C', 'Download Text Content')),
+	             div(style="display: inline-block;vertical-align:top;width:220px;",downloadButton('downloadData.WC.C', '下載資料表')),
 	              div(style="display: inline-block;vertical-align:top;width:600px;",
 	              	radioButtons(
 	               "radioBtn.WF",
