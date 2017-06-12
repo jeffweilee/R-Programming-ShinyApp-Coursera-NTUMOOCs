@@ -122,6 +122,7 @@ shinyServer(function(input, output, session) {
 						USER$selectionlist <- GenSelectionList(con)
 						USER$selectionlist_dff <- isolate(USER$selectionlist)
 						RunEnvironment(session,input,output,USER$Role,USER$selectionlist,rows)
+						
 					} else { # courselist select page inside the app
 						USER$selectionlist_dff <- GenSelectionList(con)
 						if(isSameCourse){ # same course selected, just go to overviw
@@ -351,6 +352,7 @@ shinyServer(function(input, output, session) {
 				            title="Course Rating"
 				)
 				shinyjs::hide("busy_o")
+				#shinyjs::hide("busy_on")
 			})
 
 			output$plotO.pass_item <- renderPlotly({
@@ -527,7 +529,7 @@ shinyServer(function(input, output, session) {
 					    #session$sendCustomMessage("myCallbackHandler_alert", as.character(cn))
 					    Q.title <- as.character(dbGetQuery(conn = con, paste("select ", cn , " from pre_questionaire where ", cn , " like 'Q",i,"_%'",sep="")))
 					    Q.title <- substr(Q.title, 0, gregexpr("_",Q.title )[[1]][2]-1)
-					    if(nchar(Q.title) > 30){Q.title <-paste(substr(Q.title, 0, 30), "...") }
+					    if(nchar(Q.title) > 19){Q.title <-paste(substr(Q.title, 0, 19), "...") }
 					    score <- as.vector(dbGetQuery(conn = con, paste0("select ", cn , " from pre_questionaire where ", cn , " not like 'Q",i,"%'")))
 						score <- score[score %in% c(1:5)]
 						Q.score.pre <<- rbind(Q.score.pre,score)
@@ -748,6 +750,27 @@ shinyServer(function(input, output, session) {
 				  )
 
 				  if(any(!is.na(sc$NumberOfPeople)) && any(sc$NumberOfPeople!=0)){
+					# For Overview Comparison
+				  	output$plotO.participation1 <- renderPlotly({
+				  		ggplot(data = sc,aes(x = Date, y = NumberOfPeople,group = Type,colour = Type)) +geom_line() +
+				  		labs( x = "",y = "Number Of People",color = "",title = "Number of People Start and Complete a Lesson") +
+					    scale_x_discrete(breaks = as.character(xbreaks), labels = as.character(xbreaks)) +
+					    theme(axis.text.x = element_text(angle = 90,hjust = 1,vjust = 0.5)) +
+					    geom_vline(data = weekLines,mapping = aes(xintercept = as.numeric(vals)),color = "darkgrey",linetype = 3,size = 0.3) +
+					    geom_text(data = weekLines,aes(x = vals, y = 0.9 * max(sc$NumberOfPeople),label = wkl, angle = 90),inherit.aes = FALSE)
+				  		ggplotly(tooltip = c("Date", "NumberOfPeople", "colour"))
+					})
+					output$plotO.participation2 <- renderPlotly({
+				  		ggplot(data = sc,aes(x = Date, y = NumberOfPeople,group = Type,colour = Type)) +geom_line() +
+				  		labs( x = "",y = "Number Of People",color = "",title = "Number of People Start and Complete a Lesson") +
+					    scale_x_discrete(breaks = as.character(xbreaks), labels = as.character(xbreaks)) +
+					    theme(axis.text.x = element_text(angle = 90,hjust = 1,vjust = 0.5)) +
+					    geom_vline(data = weekLines,mapping = aes(xintercept = as.numeric(vals)),color = "darkgrey",linetype = 3,size = 0.3) +
+					    geom_text(data = weekLines,aes(x = vals, y = 0.9 * max(sc$NumberOfPeople),label = wkl, angle = 90),inherit.aes = FALSE)
+				  		ggplotly(tooltip = c("Date", "NumberOfPeople", "colour"))
+					})
+
+				  # For participation tab itself
 				  ggplot(data = sc,
 				         aes(
 				           x = Date,
@@ -1083,6 +1106,40 @@ shinyServer(function(input, output, session) {
 			  
 			  ### Scatterplot ggplot
 			  if (ig.noline) {
+
+			  	 # For Overview Comparison
+			      ouput$plotO.grade1 <- renderPlotly({
+			      	ggplot(data = ig,
+			           aes(`Time Spent (minutes)`, Grade_Overall, color = Status)) +
+				      geom_point(size = 2) +
+				      labs(title = "Time Spent on Quiz and Grades") +
+				      scale_colour_manual(
+				        values = c(
+				          "Passed" = "dodgerblue",
+				          "Verified" = "chartreuse3",
+				          "Not Passed" = "darkorange"
+				        )
+				      )
+				      ggplotly()
+			      	})
+
+			      ouput$plotO.grade2 <- renderPlotly({
+			      	ggplot(data = ig,
+			           aes(`Time Spent (minutes)`, Grade_Overall, color = Status)) +
+				      geom_point(size = 2) +
+				      labs(title = "Time Spent on Quiz and Grades") +
+				      scale_colour_manual(
+				        values = c(
+				          "Passed" = "dodgerblue",
+				          "Verified" = "chartreuse3",
+				          "Not Passed" = "darkorange"
+				        )
+				      )
+				      ggplotly()
+			      	})
+
+
+			  	# For grade tab itself
 			    ggplot(data = ig,
 			           aes(`Time Spent (minutes)`, Grade_Overall, color = Status)) +
 			      geom_point(size = 2) +
@@ -1095,7 +1152,48 @@ shinyServer(function(input, output, session) {
 			        )
 			      )
 			  } else if (nrow(ig) > 0) {
+
+			  	 # For Overview Comparison
+			      output$plotO.grade1 <- renderPlotly({
+			      	ggplot(data = ig,
+			           aes(`Time Spent (minutes)`, Grade_Overall, color = Status)) +
+				      geom_point(size = 1, alpha = 0.5) +
+				      labs(title = "Time Spent on Quiz and Grades Scatterplot") +
+				      scale_colour_manual(
+				        values = c(
+				          "Passed" = "dodgerblue",
+				          "Verified" = "chartreuse3",
+				          "Not Passed" = "darkorange"
+				        )
+				      ) +
+				      geom_smooth(method = "lm",
+				                  se = F,
+				                  size = 0.5) 
+				      ggplotly()
+			      	})
+
+			      output$plotO.grade2 <- renderPlotly({
+			      	ggplot(data = ig,
+			           aes(`Time Spent (minutes)`, Grade_Overall, color = Status)) +
+				      geom_point(size = 1, alpha = 0.5) +
+				      labs(title = "Time Spent on Quiz and Grades Scatterplot") +
+				      scale_colour_manual(
+				        values = c(
+				          "Passed" = "dodgerblue",
+				          "Verified" = "chartreuse3",
+				          "Not Passed" = "darkorange"
+				        )
+				      ) +
+				      geom_smooth(method = "lm",
+				                  se = F,
+				                  size = 0.5) 
+				      ggplotly()
+			      	})
+
+
+
 			    ranges <- reactiveValues(x = NULL, y = NULL)
+				# For grade tab itself
 			    ggplot(data = ig,
 			           aes(`Time Spent (minutes)`, Grade_Overall, color = Status)) +
 			      geom_point(size = 1, alpha = 0.5) +
@@ -1111,6 +1209,11 @@ shinyServer(function(input, output, session) {
 			                  se = F,
 			                  size = 0.5) +
 			      coord_cartesian(xlim = ranges$x, ylim = ranges$y)
+
+
+
+
+
 			  }
 			  ggplotly()
 			})
@@ -1981,7 +2084,15 @@ RunEnvironment <- function(session,input,output,user,selectionlist,rows){
 			   #    menuItem("Your MOOCs", icon = icon("bookmark"), tabName = "moocs"),
 				  # menuItem("Teacher System",href="http://140.112.107.63:8000",badgeLabel = "link", badgeColor = "green", icon=icon("user")),hr(),
 				  # menuItem("Logout", icon=icon("sign-out"))
-				  menuItem("總覽", icon = icon("dashboard"), tabName = "overview"),
+				  menuItem("總覽", icon = icon("dashboard"), tabName = "overview"
+				  	#,
+				  	# menuSubItem("總覽", tabName = "overview"),
+				  	# menuSubItem("基本資料", tabName = "overview_basic"),
+				  	# menuSubItem("參與比較", tabName = "overview_participation"),
+				  	# menuSubItem("成績比較", tabName = "overview_grade"),
+			    	# menuSubItem("學生背景", tabName = "overview_background"),
+			    	# menuSubItem("問卷資料", tabName = "overview_questionaire")
+			      ),
 			      menuItem("參與", icon = icon("area-chart"), tabName = "participation"),
 			      menuItem("成績", icon = icon("pencil"), tabName = "engagement"),
 			      menuItem("論壇", icon = icon("tasks"), tabName = "discussion"),
@@ -2009,12 +2120,66 @@ RunEnvironment <- function(session,input,output,user,selectionlist,rows){
 					$(".fa-angle-left").toggleClass("fa-angle-down"); $(".content").css("min-height","900px"); 
 					// setTimeout(function(){$("section > ul > li:nth-child(2) > a").click();},700); // about menusubitem
 					$("section > ul > li:nth-child(2) > ul > li:nth-child(1) > a").click(); 
-					$("section > ul > li:nth-last-child(1) > a").click(function(){alert(\'Logout!\');location.reload(true);});')),
+					$("section > ul > li:nth-last-child(1) > a").click(function(){alert(\'Logout!\');location.reload(true);});
+
+
+			        $(document).ready(function(){$("#course_o").on("DOMSubtreeModified propertychange", function() {
+		               			var ua = window.navigator.userAgent;
+    							var msie = ua.includes("MSIE ");
+    							var trident = ua.includes("Trident/");
+    							var edge = ua.includes("Edge/");
+    							if(msie || trident || edge){   
+    								// If Internet Explorer
+    								setTimeout(function(){
+						               $("#busy_on").css({"visibility":"hidden"});
+					             	}, 1000);
+				              	}else{
+						            $("#busy_on").css({"visibility":"hidden"});
+						        }
+			               });
+		             });
+
+
+					// For overview menuSubItem
+					$(\'a[href$="#shiny-tab-overview_all"]\').click(function(){
+						$(\'a[href$="shiny-tab-overview"]\').click();
+					});
+
+					$(\'a[href$="#shiny-tab-overview"]\').click(function(){
+						$("body").animate({scrollTop:$("#course_o").offset().top},200);
+					});
+					$(\'a[href$="#shiny-tab-overview_basic"]\').click(function(){
+						$(\'a[href$="shiny-tab-overview"]\').click();
+						$("body").animate({scrollTop:0},200);
+					});
+					$(\'a[href$="#shiny-tab-overview_participation"]\').click(function(){
+						$(\'a[href$="shiny-tab-overview"]\').click();
+						$("body").animate({scrollTop:$("#course_o").offset().top},200);
+					});
+					$(\'a[href$="#shiny-tab-overview_grade"]\').click(function(){
+						$(\'a[href$="shiny-tab-overview"]\').click();
+						$("body").animate({scrollTop:$("#course_o").offset().top},200);
+					});
+					$(\'a[href$="#shiny-tab-overview_background"]\').click(function(){
+						$(\'a[href$="shiny-tab-overview"]\').click();
+						$("body").animate({scrollTop:$("#ql > div").offset().top},200);
+					});
+					$(\'a[href$="#shiny-tab-overview_questionaire"]\').click(function(){
+						$(\'a[href$="shiny-tab-overview"]\').click();
+						$("body").animate({scrollTop:$("#ql_corr > div").offset().top},200);
+					});
+
+
+
+
+					')),
 				tags$style(HTML('hr{background-color:darkgrey; color:darkgrey; height:1px;} 
 					li > a > span{margin-left:5px;} 
 					.sidebar-toggle{height:50px;} 
 					.main-header .logo {font-size:14px; /*margin-left:-30px; width:290px;*/ } 
-					.main-sidebar{font-size:14px;width:230px;} .main-header > .navbar{height:50px;}')),
+					@media screen and (min-width:800px){.logo{position:fixed;}}
+					.main-sidebar{font-size:14px;width:230px;position:fixed;} 
+					.main-header > .navbar{height:50px;}')),
 				  
 				       UIWeb(selectionlist)
 				  
@@ -2114,7 +2279,9 @@ We would like to hear your voice. Please let us know what to improve!", width = 
 			        		$(path).css("visibility","visible");
 			        });
 			        Shiny.addCustomMessageHandler("myCallbackHandler_sameCourse",
-			         function(m){$("a:contains(Overview)").click(); //alert("overview~"+m);
+			          function(m){
+			          	$(\'a[href$="shiny-tab-a_platform"]\').click();
+			          	//alert("overview~"+m);
 			        });
                    Shiny.addCustomMessageHandler("myCallbackHandler_diffCourse",
 		               function(typeMessage) {
@@ -2139,7 +2306,6 @@ We would like to hear your voice. Please let us know what to improve!", width = 
     							var edge = ua.includes("Edge/");
     							if(msie || trident || edge){   
     								// If Internet Explorer
-    								alert();
     								setTimeout(function(){
 						               $("#course_o").css({"visibility":"visible"});
 						               $("#content_o").css({"visibility":"visible"});
@@ -2156,7 +2322,7 @@ We would like to hear your voice. Please let us know what to improve!", width = 
 			        });'))),
        # Give the page a title
        titlePanel(h3(textOutput("course_o"), align = "center")),
-       #hr(),
+       br(),
        # Generate a row with a sidebar
 
        # Create a spot for the barplot
@@ -2166,7 +2332,6 @@ We would like to hear your voice. Please let us know what to improve!", width = 
          div(id = "busy_o",
              p("Loading Web Content...Please wait...", align = "center")),
          div(id = "content_o",
-            
              	box(title="資料範圍",status="primary",solidHeader = TRUE,
                      #h4(strong(textOutput("DR.o")), align = "left"), br(),
                      h5(textOutput("sday.o"), align = "left"),
@@ -2198,6 +2363,89 @@ We would like to hear your voice. Please let us know what to improve!", width = 
 	               	plotOutput("plotO.rating"), br(),
 	               	width=4),
 
+
+				box(title="參與狀況比較",status="primary",solidHeader = TRUE,
+	               	column(1,
+	               		selectInput(
+				            "section1.participation..o",
+				             #"Modules",
+				             "班次選擇：",
+				             choices = c("全部"="All", "其他"="Others"),
+				             selected = "All"
+			            ),
+			           helpText(HTML(
+			             paste( "",
+			                    "►選擇左圖參與狀況之班次",
+			                   " ",
+			                   sep = "<br>")
+			        	))
+			        ),
+	               	column(5,
+	               		plotlyOutput("plotO.participation1")
+	               	),
+	               	column(5,
+	               		plotlyOutput("plotO.participation2")
+	               	),
+	               	column(1,
+	               		selectInput(
+				            "section2.participation.o",
+				             #"Modules",
+				             "班次選擇：",
+				             choices = c("全部"="All", "其他"="Others"),
+				             selected = "All"
+			            ),
+			           helpText(HTML(
+			             paste( "",
+			                    "►選擇右圖參與狀況之班次",
+			                   " ",
+			                   sep = "<br>")
+			        	))
+			        ),
+	               	br(),
+	               	width=12),
+
+
+				box(title="成績比較",status="primary",solidHeader = TRUE,
+	               	column(1,
+	               		selectInput(
+				            "section1.grade.o",
+				             #"Modules",
+				             "班次選擇：",
+				             choices = c("全部"="All", "其他"="Others"),
+				             selected = "All"
+			            ),
+			           helpText(HTML(
+			             paste( "",
+			                    "►選擇左圖成績之班次",
+			                   " ",
+			                   sep = "<br>")
+			        	))
+			        ),
+	               	column(5,
+	               		plotlyOutput("plotO.grade1")
+	               	),
+	               	column(5,
+	               		plotlyOutput("plotO.grade2")
+	               	),
+	               	column(1,
+	               		selectInput(
+				            "section2.grade.o",
+				             #"Modules",
+				             "班次選擇：",
+				             choices = c("全部"="All", "其他"="Others"),
+				             selected = "All"
+			            ),
+			           helpText(HTML(
+			             paste( "",
+			                    "►選擇右圖成績之班次",
+			                   " ",
+			                   sep = "<br>")
+			        	))
+			        ),
+	               	br(),
+	               	width=12),
+
+
              div(id="ql",
              	 br(),br(),
 	             box(title="學生背景",status="primary",solidHeader = TRUE,
@@ -2226,20 +2474,20 @@ We would like to hear your voice. Please let us know what to improve!", width = 
                  ),
                  div(id="ql_corr",
 	                 box(title="問卷題目 [1-5分] [每一列的左圖和右圖爲前測和後測的對應題目]",status="primary",solidHeader = TRUE,
-	                     column(5, h3("Pre-test 前測問卷", align = "center"), h3(strong(textOutput("Q.pre.o")), align = "center"),
+	                     column(5, h3("Pre-test 前測問卷", align = "center"), h3(textOutput("Q.pre.o"), align = "center"),br(),
 				            lapply(c(10:24), function(i) { 
 	  							plotlyOutput(paste0('Q.score.pre.o', i))
-	  						}),br(), br(), br()
+	  						}),br(), br(), br(), br()
 				           
 				          ),
-						 column(5, h3("Post-test 後測問卷", align = "center"), h3(strong(textOutput("Q.post.o")), align = "center"),
+						 column(5, h3("Post-test 後測問卷", align = "center"), h3(textOutput("Q.post.o"), align = "center"),br(),
 							lapply(c(1:21)[!c(1:21) %in% c(6,7,13:16)], function(i) { 
 	  							plotlyOutput(paste0('Q.score.post.o', i))
-	  						 }),br(), br(), br()
+	  						 }),br(), br(), br(), br()
 				         ),column(2, h3("前後測檢定", align = "center"), br(),br(),
 				            lapply(c(1:15), function(i) { 
 	  							htmlOutput(paste0('Q.score.ttest.o', i), style="height:400px;")
-	  						}),br(), br(), br()),
+	  						}),br(), br(), br(), br()),
 			             dataTableOutput('Q.Num.o'),br(), br(), br(), 
 		             width=12)
 		         )
@@ -2303,7 +2551,7 @@ We would like to hear your voice. Please let us know what to improve!", width = 
              id = "sub.SC",
              box(title="課程項目參與人數（進入 & 離開）",status="primary",solidHeader = TRUE,
             	 plotlyOutput("plotSC.Histogram", height = "400px",width="100%"),
-             width=9, height = "480px"),
+             width=9, height = "550px"),
              br(),
 	         box(title="課程項目參與人數資料",status="primary",solidHeader = TRUE,width=12,
 	             HTML("<br><br>"),
