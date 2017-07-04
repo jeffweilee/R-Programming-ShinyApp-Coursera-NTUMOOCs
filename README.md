@@ -144,8 +144,8 @@ $ pip install autocomplete
 $ activate-global-python-argcomplete
 $ pip install courseraoauth2client
 ```
-* Create an application at https://accounts.coursera.org/console (seems only available on non-Windows OS) using a valid Coursera partner account (better to be the ***data coordinator account*** to grant more priviledges), and set the Redirect URI to be http://localhost:9876/callback on the console. Get __client id__ and __secret__ for app auth later (Notice that the app name created on the console does not matter. The scope of the app is only view_profile, and has no use due to some errors in client authentication).
-* Authorize the application: __manage_research_exports__ (just use this name, no need to create it on the Coursera dev console). You will be required to authenticate and login to a valid Coursera partner account. Notice that only the ***data coordinator account*** can request ***clickstream*** data.
+* Create an application at https://accounts.coursera.org/console (seems only available on non-Windows OS) using a valid Coursera partner account (better to be the __data coordinator account__ to grant more priviledges), and set the Redirect URI to be http://localhost:9876/callback on the console. Get __client id__ and __secret__ for app auth later (Notice that the app name created on the console does not matter. The scope of the app is only view_profile, and has no use due to some errors in client authentication).
+* Authorize the application: __manage_research_exports__ (just use this name, no need to create it on the Coursera dev console). You will be required to authenticate and login to a valid Coursera partner account. Notice that only the __data coordinator account__ can request __clickstream__ data.
 ```
 $ courseraoauth2client config authorize --app manage_research_exports
 ```
@@ -163,9 +163,9 @@ $ courseraresearchexports jobs get_all
 ```
 * Download jobs by request id 
 ```
-$ courseraresearchexports jobs download $REQUESTID
+$ courseraresearchexports jobs download $EXPORT_REQUEST_ID
 ```
-* Containers: Creates a docker container using the postgres image and loads export data into a postgres database on the container.
+* Containers: Creates a docker container using the postgres image and loads export data into a postgres database on the container (postgres SQL is included in a docker). To create a docker container from an export, first request an export using the jobs command. Then, using the $EXPORT_REQUEST_ID.
 	+ Install Docker CE [[1](https://docs.docker.com/engine/installation/linux/docker-ce/ubuntu/#os-requirements)]
 	+ List containers
 	```
