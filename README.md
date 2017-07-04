@@ -144,8 +144,8 @@ $ pip install autocomplete
 $ activate-global-python-argcomplete
 $ pip install courseraoauth2client
 ```
-* Create an application at https://accounts.coursera.org/console (seems only available on non-Windows OS), and set the Redirect URI to be http://localhost:9876/callback on the console. Get __client id__ and __secret__ for app auth later (Notice that the app name created on the console does not matter. The scope of the app is only view_profile, and has no use due to some errors in client authentication).
-* Authorize the application: __manage_research_exports__ (just use this name, no need to create it on the Coursera dev console)
+* Create an application at https://accounts.coursera.org/console (seems only available on non-Windows OS) using a valid Coursera partner account (better to be _Data Coordinator_ account to grant more priviledges), and set the Redirect URI to be http://localhost:9876/callback on the console. Get __client id__ and __secret__ for app auth later (Notice that the app name created on the console does not matter. The scope of the app is only view_profile, and has no use due to some errors in client authentication).
+* Authorize the application: __manage_research_exports__ (just use this name, no need to create it on the Coursera dev console). You will be required to authenticate and login to a valid Coursera partner account. Notice that only _Data Coordinator_ account can request _clickstream_ data.
 ```
 $ courseraoauth2client config authorize --app manage_research_exports
 ```
