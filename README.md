@@ -1,17 +1,18 @@
 # NTU MOOC X Coursera Data Analytics
-* This platform aims at deriving insights from NTU MOOCs data 
+* Aims at deriving insights from NTU MOOCs data 
 * Provide Overview, Participation, Engagement, Discussion and Wordcloud sections
 * Use shiny R as an interactive website framwork
+* Retrieve Course Data from Coursera Data Export API
 <br><br>
 <!--![snapshot](about/snapshot.png)-->
 
-## Content
+## Table of Content
 * [Environment](#Environment)
 * [R packages](#R-packages)
 * [Setup - Ubuntu on VMWare Workstation 12 Player](#Setup---Ubuntu-on-VMWare-Workstation-12-Player)
 * [Setup - Shiny Serevr on Ubuntu 12.04 or later](#Setup---Shiny-Serevr-on-Ubuntu-12.04-or-later)
 * [Setup - R packages](#Setup---R-packages)
-* [Coursera Data API](#Coursera-Data-API)
+* [Coursera Data Export API](#Coursera-Data-Export-API)
  
 ## Environment
 * R-3.3.2
@@ -42,14 +43,14 @@
 * xRDP-Ubuntu-Mate-Desktop [[1](http://expertisenpuru.com/how-to-fix-grey-screen-with-x-cursor-problem-in-ubuntu-14-04-or-higher/)]
 	+ Install xRDP-Ubuntu-Mate-Desktop
 	```
-	$ sudo apt-get install xrdp
-	$ sudo apt-add-repository ppa:ubuntu-mate-dev/ppa
-	$ sudo apt-add-repository ppa:ubuntu-mate-dev/trusty-mate
-	$ sudo apt-get update
-	$ # sudo apt-get upgrade
-	$ sudo apt-get install ubuntu-mate-core ubuntu-mate-desktop
-	$ echo mate-session >~/.xsession
-	$ sudo service xrdp restart
+	$ apt-get install xrdp
+	$ apt-add-repository ppa:ubuntu-mate-dev/ppa
+	$ apt-add-repository ppa:ubuntu-mate-dev/trusty-mate
+	$ apt-get update
+	$ # apt-get upgrade
+	$ apt-get install ubuntu-mate-core ubuntu-mate-desktop
+	$ mate-session >~/.xsession
+	$ service xrdp restart
 	```
 	+ Edit NAT setting for Remote Control
 		+ Open Virtual Network Editor
@@ -107,26 +108,38 @@ $ sudo apt-get -y install r-base
 * However, some of the packages have dependency problems, so run terminal command before R command
 	+ plotly [[1](http://unix.stackexchange.com/questions/320594/how-to-install-r-plotly-in-debian)]
 	```
-	$ sudo apt-get install libssl-dev
-	$ sudo apt-get install libcurl4-openssl-dev
-	$ sudo R
+	$ apt-get install libssl-dev
+	$ apt-get install libcurl4-openssl-dev
+	$ R
 	> install.packages("plotly")
 	```
 	+ rJava [[1](http://stackoverflow.com/questions/34212378/installation-of-rjava)] [[2](http://stackoverflow.com/questions/26797428/failing-to-install-rjava-package-in-r-with-error-bootstrap-class-path-not-set-i)]
 	```
-	$ sudo apt-get install openjdk-7-jdk
-	$ sudo R CMD javareconf
-	$ sudo reboot
-	$ sudo apt-get install liblzma-dev
-	$ sudo R
+	$ apt-get install openjdk-7-jdk
+	$ R CMD javareconf
+	$ reboot
+	$ apt-get install liblzma-dev
+	$ R
 	> install.packages("rJava")
 	```
 	+ RMySQL [[1](http://blogs.candoerz.com/question/269278/error-installing-rmysql-mysql-5537-in-ubuntu-1404-.aspx)] [[2](http://stats.stackexchange.com/questions/194515/r-package-rmysql-installation-returns-a-configuration-failed-error)]
 	```
-	$ sudo apt-get install libmysql++-dev
-	$ sudo apt-get install libmysqlclient-dev
-	$ sudo apt-get install r-cran-rmysql
-	$ sudo R
+	$ apt-get install libmysql++-dev
+	$ apt-get install libmysqlclient-dev
+	$ apt-get install r-cran-rmysql
+	$ R
 	> install.packages("RMySQL")
 	```
-## Coursera Data API
+## Coursera Data Export API
+* Install python 2.7 distribution of Anaconda [[1](https://www.continuum.io/downloads)]
+```
+$ bash ~/Anaconda2-4.4.0-Linux-x86_64.sh
+```
+* install python packages for coursera data export
+```
+$ pip install courseraresearchexports
+$ pip install autocomplete
+$ activate-global-python-argcomplete
+$ pip install courseraoauth2client
+```
+*
