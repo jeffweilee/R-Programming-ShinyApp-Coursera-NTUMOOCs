@@ -144,16 +144,16 @@ $ pip install autocomplete
 $ activate-global-python-argcomplete
 $ pip install courseraoauth2client
 ```
-* Create an application at https://accounts.coursera.org/console (seems only available on non-Windows OS) using a valid Coursera partner account (better to be the __data coordinator__ account to grant more priviledges), and set the Redirect URI to be http://localhost:9876/callback on the console. Get __client id__ and __secret__ for app auth later (Notice that the app name created on the console does not matter. The scope of the app is only view_profile, and has no use due to some errors in client authentication).
-* Authorize the application: __manage_research_exports__ (just use this name, no need to create it on the Coursera dev console). You will be required to authenticate and login to a valid Coursera partner account. Notice that only the __data coordinator__ account can request _clickstream_ data.
+* Create an application at https://accounts.coursera.org/console (seems only available on non-Windows OS) using a valid Coursera partner account (better to be the ***data coordinator account*** to grant more priviledges), and set the Redirect URI to be http://localhost:9876/callback on the console. Get __client id__ and __secret__ for app auth later (Notice that the app name created on the console does not matter. The scope of the app is only view_profile, and has no use due to some errors in client authentication).
+* Authorize the application: __manage_research_exports__ (just use this name, no need to create it on the Coursera dev console). You will be required to authenticate and login to a valid Coursera partner account. Notice that only the ***data coordinator account*** can request ***clickstream*** data.
 ```
 $ courseraoauth2client config authorize --app manage_research_exports
 ```
-* Request course data (clickstream data not included), e.g. Course mechanics-of-materials-1
+* Request course data (clickstream data not included), e.g. mechanics-of-materials-1
 ```
 $ courseraresearchexports jobs request tables --course_slug mechanics-of-materials-1 --purpose "mechanics-of-materials-1 course data"
 ```
-* Request clickstream data (interval is optional), e.g. zhichang-suyang course
+* Request clickstream data (interval is optional), e.g. mechanics-of-materials-1
 ```
 $ courseraresearchexports jobs request clickstream --course_slug mechanics-of-materials-1 --purpose "mechanics-of-materials-1 clickstream data" \--interval 2017-01-01 2017-07-01
 ```
