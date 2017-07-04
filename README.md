@@ -7,11 +7,11 @@
 
 ## Content
 * [Environment](#Environment)
-* [R packages](#R packages)
-* [Setup - Ubuntu on VMWare Workstation 12 Player](#Setup - Ubuntu on VMWare Workstation 12 Player)
-* [Setup - Shiny Serevr on Ubuntu 12.04 or later](#Setup - Shiny Serevr on Ubuntu 12.04 or later)
-* [Setup - R packages](#Setup - R packages)
-* [Coursera Data API](#Coursera Data API)
+* [R packages](#R-packages)
+* [Setup - Ubuntu on VMWare Workstation 12 Player](#Setup---Ubuntu-on-VMWare-Workstation-12-Player)
+* [Setup - Shiny Serevr on Ubuntu 12.04 or later](#Setup---Shiny-Serevr-on-Ubuntu-12.04-or-later)
+* [Setup - R packages](#Setup---R-packages)
+* [Coursera Data API](#Coursera-Data-API)
  
 ## Environment
 * R-3.3.2
