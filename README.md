@@ -1,5 +1,5 @@
-# NTU MOOC X Coursera Data Analytics
-* Aims at deriving insights from NTU MOOCs data 
+# NTU MOOCs X Coursera Data Analytics
+* Aims at deriving insights from NTU MOOCs X Coursera data 
 * Use shiny R as an interactive website framwork
 * Provide Overview, Participation, Engagement, Discussion and Wordcloud sections
 * Retrieve Course Data from Coursera Data Export API
@@ -161,7 +161,7 @@ $ courseraresearchexports jobs request clickstream --course_slug mechanics-of-ma
 ```
 $ courseraresearchexports jobs get_all
 ```
-* Download jobs by request id 
+* Download jobs by request id (csv files)
 ```
 $ courseraresearchexports jobs download $EXPORT_REQUEST_ID
 ```
