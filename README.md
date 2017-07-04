@@ -7,12 +7,12 @@
 <!--![snapshot](about/snapshot.png)-->
 
 ## Table of Content
-* [Environment](#Environment)
-* [R packages](#R-packages)
-* [Setup - Ubuntu on VMWare Workstation 12 Player](#Setup---Ubuntu-on-VMWare-Workstation-12-Player)
-* [Setup - Shiny Serevr on Ubuntu 12.04 or later](#Setup---Shiny-Serevr-on-Ubuntu-12.04-or-later)
-* [Setup - R packages](#Setup---R-packages)
-* [Coursera Data Export API](#Coursera-Data-Export-API)
+* [Environment](#environment)
+* [R packages](#r-packages)
+* [Setup - Ubuntu on VMWare Workstation 12 Player](#setup---ubuntu-on-vmware-workstation-12-player)
+* [Setup - Shiny Serevr on Ubuntu 12.04 or later](#setup---shiny-serevr-on-ubuntu-12.04-or-later)
+* [Setup - R packages](#setup---r-packages)
+* [Coursera Data Export API](#coursera-data-export-api)
  
 ## Environment
 * R-3.3.2
@@ -130,16 +130,75 @@ $ sudo apt-get -y install r-base
 	$ R
 	> install.packages("RMySQL")
 	```
-## Coursera Data Export API
+## Coursera Data Export API (More info on [courseraresearchexports](https://github.com/coursera/courseraresearchexports) gitbub)
 * Install python 2.7 distribution of Anaconda [[1](https://www.continuum.io/downloads)]
 ```
 $ bash ~/Anaconda2-4.4.0-Linux-x86_64.sh
 ```
-* install python packages for coursera data export
+* Install python packages for coursera data export
 ```
 $ pip install courseraresearchexports
 $ pip install autocomplete
 $ activate-global-python-argcomplete
 $ pip install courseraoauth2client
 ```
-*
+* Create an application at https://accounts.coursera.org/console (seems only available on non-Windows OS), and set the Redirect URI to be http://localhost:9876/callback on the console. Get __client id__ and __secret__ for app auth later (Notice that the app name created on the console does not matter. The scope of the app is only view_profile, and has no use due to some errors in client authentication).
+* Authorize the application: __manage_research_exports__ (just use this name, no need to create it on the Coursera dev console)
+```
+$ courseraoauth2client config authorize --app manage_research_exports
+```
+* Request course data (clickstream data not included)
+```
+$ courseraresearchexports jobs request tables --course_slug zhichang-suyang --purpose "zhichang-suyang first try"
+```
+* Request clickstream data (interval is optional)
+```
+$ courseraresearchexports jobs request clickstream --course_slug zhichang-suyang --purpose "zhichang-suyang clickstream first time" \--interval 2016-09-01 2016-09-02
+```
+* View all requested jobs
+```
+$ courseraresearchexports jobs get_all
+```
+* Download jobs by request id 
+```
+$ courseraresearchexports jobs download $REQUESTID
+```
+* Containers: Creates a docker container using the postgres image and loads export data into a postgres database on the container.
+	+ Install Docker CE [[1](https://docs.docker.com/engine/installation/linux/docker-ce/ubuntu/#os-requirements)]
+	+ List containers
+	```
+	$ courseraresearchexports containers list
+	```
+	+ Create container for the data of a request id
+	```
+	$ courseraresearchexports containers create --export_request_id ilxqhxfr6s
+	```
+	+ Start/stop/remove a container by the container id
+	```
+	$ courseraresearchexports containers start 8f53f165f415 
+	```
+	+ Connect the container id, and your are allowed to query by SQL
+	```
+	$ courseraresearchexports db connect 8f53f165f415
+	DBName> select * from table;
+	```
+	+ Create view
+	```
+	$ courseraresearchexports db create_view 8f53f165f415 --view_name demographic_survey
+	```
+	+ Create view by SQL file
+	```
+	$ courseraresearchexports db create_view $CONTAINER_NAME --sql_file /path/to/sql/file/new_view.sql
+	``` 
+	+ List_tables
+	```
+	$ courseraresearchexports db list_tables $CONTAINER_NAME
+	``` 
+	+ List_views
+	```
+	$ courseraresearchexports db list_views $CONTAINER_NAME
+	```
+	+ unload_to_csv
+	```
+	$ courseraresearchexports db unload_to_csv $CONTAINER_NAME --relation demographic_survey --dest /path/to/dest/
+	```
