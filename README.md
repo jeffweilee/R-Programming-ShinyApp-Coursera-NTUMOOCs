@@ -130,7 +130,9 @@ $ sudo apt-get -y install r-base
 	$ R
 	> install.packages("RMySQL")
 	```
-## Coursera Data Export API (More info on [courseraresearchexports](https://github.com/coursera/courseraresearchexports) gitbub)
+	<br>
+## Coursera Data Export API
+* More info on [courseraresearchexports](https://github.com/coursera/courseraresearchexports) gitbub
 * Install python 2.7 distribution of Anaconda [[1](https://www.continuum.io/downloads)]
 ```
 $ bash ~/Anaconda2-4.4.0-Linux-x86_64.sh
@@ -147,13 +149,13 @@ $ pip install courseraoauth2client
 ```
 $ courseraoauth2client config authorize --app manage_research_exports
 ```
-* Request course data (clickstream data not included)
+* Request course data (clickstream data not included), e.g. Course mechanics-of-materials-1
 ```
-$ courseraresearchexports jobs request tables --course_slug zhichang-suyang --purpose "zhichang-suyang first try"
+$ courseraresearchexports jobs request tables --course_slug mechanics-of-materials-1 --purpose "mechanics-of-materials-1 course data"
 ```
-* Request clickstream data (interval is optional)
+* Request clickstream data (interval is optional), e.g. zhichang-suyang course
 ```
-$ courseraresearchexports jobs request clickstream --course_slug zhichang-suyang --purpose "zhichang-suyang clickstream first time" \--interval 2016-09-01 2016-09-02
+$ courseraresearchexports jobs request clickstream --course_slug mechanics-of-materials-1 --purpose "mechanics-of-materials-1 clickstream data" \--interval 2017-01-01 2017-07-01
 ```
 * View all requested jobs
 ```
