@@ -1,7 +1,7 @@
 # NTU MOOC X Coursera Data Analytics
 * Aims at deriving insights from NTU MOOCs data 
-* Provide Overview, Participation, Engagement, Discussion and Wordcloud sections
 * Use shiny R as an interactive website framwork
+* Provide Overview, Participation, Engagement, Discussion and Wordcloud sections
 * Retrieve Course Data from Coursera Data Export API
 <br><br>
 <!--![snapshot](about/snapshot.png)-->
