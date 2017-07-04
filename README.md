@@ -1,9 +1,17 @@
-# NTU MOOCs Data Analytics Platform
+# NTU MOOC X Coursera Data Analytics
 * This platform aims at deriving insights from NTU MOOCs data 
 * Provide Overview, Participation, Engagement, Discussion and Wordcloud sections
 * Use shiny R as an interactive website framwork
 <br><br>
-![snapshot](about/snapshot.png)
+<!--![snapshot](about/snapshot.png)-->
+
+## Content
+* [Environment](#Environment)
+* [R packages](#R packages)
+* [Setup - Ubuntu on VMWare Workstation 12 Player](#Setup - Ubuntu on VMWare Workstation 12 Player)
+* [Setup - Shiny Serevr on Ubuntu 12.04 or later](#Setup - Shiny Serevr on Ubuntu 12.04 or later)
+* [Setup - R packages](#Setup - R packages)
+* [Coursera Data API](#Coursera Data API)
  
 ## Environment
 * R-3.3.2
@@ -121,3 +129,4 @@ $ sudo apt-get -y install r-base
 	$ sudo R
 	> install.packages("RMySQL")
 	```
+## Coursera Data API
