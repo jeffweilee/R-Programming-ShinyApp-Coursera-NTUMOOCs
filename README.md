@@ -27,7 +27,7 @@
 * Data Manipulation
 	+ dplyr, DT, reshape, RMySQL
 * Plot
-	+ lattice, ggplot2, plotly, scales
+	+ circlize, lattice, ggplot2, plotly, scales
 * Word Processing
 	+ rJava, RColorBrewer, Rwordseg, tm, tmcn, wordcloud
 
