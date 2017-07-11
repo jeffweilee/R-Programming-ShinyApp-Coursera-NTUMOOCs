@@ -133,6 +133,7 @@ $ sudo apt-get -y install r-base
 	<br>
 ## Coursera Data Export API
 * More info on [courseraresearchexports](https://github.com/coursera/courseraresearchexports) gitbub
+* More info regarding to process automation on [Coursera-scheduled-exports](https://github.com/LU-C4i/coursera-scheduled-exports) gitbub
 * Install python 2.7 distribution of Anaconda [[1](https://www.continuum.io/downloads)]
 ```
 $ bash ~/Anaconda2-4.4.0-Linux-x86_64.sh
