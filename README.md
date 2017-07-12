@@ -135,7 +135,7 @@ $ sudo apt-get -y install r-base
 ## Coursera Data Export API
 * More info on [courseraresearchexports](https://github.com/coursera/courseraresearchexports) gitbub
 * More info regarding to process automation on [Coursera-scheduled-exports](https://github.com/LU-C4i/coursera-scheduled-exports) gitbub
-* Only the data retrieved using __Data Coordinator__ account will the hased __user_id__ be a cross-domain identifier to identify the same user across the multiple table domains Otherwise, without the Data Coordinator role, each table domain uses a separate user ID to distinguish between the different types of learner-generated data
+* Only the data retrieved using __Data Coordinator__ account will the hased __user_id__ be a cross-domain identifier to identify the same user across the multiple table domains. Otherwise, without the Data Coordinator role, each table domain uses a separate user ID to distinguish between the different types of learner-generated data
 * Install python 2.7 distribution of Anaconda [[1](https://www.continuum.io/downloads)]
 ```
 $ bash ~/Anaconda2-4.4.0-Linux-x86_64.sh
