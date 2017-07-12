@@ -213,9 +213,9 @@ $ courseraresearchexports jobs download $EXPORT_REQUEST_ID
 	+ Access: Accessing course description page, course material, and anything else under the url https://coursera.org/learn/YOUR_COURSE_SLUG
 * Metadata
 	+ [partner]_user_id
-		+123
+		+ 123
 	+ hashed_session_cookie_id
-		*456
+		* 456
 	+ server_timestamp
 	+ hashed_ip
 	+ user_agent
