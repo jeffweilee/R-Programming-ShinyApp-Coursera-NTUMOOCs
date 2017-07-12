@@ -208,12 +208,14 @@ $ courseraresearchexports jobs download $EXPORT_REQUEST_ID
 	```
 ## Clickstream Data Guide
 * More info on [Clickstream Data Guide](https://coursera.gitbooks.io/data-exports/content/clickstream_data_guide/) gitbook
-* Clickstream data
+* Clickstream data (Data exports do not provide clickstream data for Coursera's iOS and Android application)
 	+ Video: Interactions with lecture videos (e.g start, stop, pause, change subtitles, heartbeats)
 	+ Access: Accessing course description page, course material, and anything else under the url https://coursera.org/learn/YOUR_COURSE_SLUG
 * Metadata
 	+ [partner]_user_id
+		+123
 	+ hashed_session_cookie_id
+		*456
 	+ server_timestamp
 	+ hashed_ip
 	+ user_agent
@@ -226,6 +228,7 @@ $ courseraresearchexports jobs download $EXPORT_REQUEST_ID
 	+ timezone
 	+ os
 	+ browser
+The following SQL can create a table in postgres that is then suitable to have clickstream data copied into:
 ```
 CREATE TABLE clickstream_events (
     hashed_user_id varchar,
