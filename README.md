@@ -293,7 +293,7 @@ CREATE TABLE clickstream_events (
 	+ page_requested: This event is fired when a user makes a request to Coursera's website through a browser
 		+ This event is fired when a user makes a request to Coursera's website through a browser. This differs from the pageview event in that it is fired immediately after the user requests the page, not when the user downloads the HTML for rendering the page. This event is not fired when the user navigates within a single page application. There should be less ~~page_requested~~ events than ~~pageview~~ events
 	+ page_preloaded
-		+ This event is fired the first time the user downloads Coursera's Javascript for a given page load. This differs from the pageview event in that it is fired before all the Javascript required to render the page is downloaded. This event is not fired when the user navigates within a single page application. There should be less ~~page_preloaded~~ events than ~~pageview~~ events
+		+ This event is fired the first time the user downloads Coursera's Javascript for a given page load. This differs from the pageview event in that it is fired before all the Javascript required to render the page is downloaded. This event is not fired when the user navigates within a single page application. There should be less ```page_preloaded```events than ```pageview``` events
 	+ Access Type: home
 		+ lecture
 		+ supplement
