@@ -254,46 +254,46 @@ CREATE TABLE clickstream_events (
 * Video Data Fields
 	+ heartbeat
 		+ An event that is fired every 5 seconds of the video playing
-		+ The value JSON object contains the following additional fields: ~~playback_rate, subtitle_language, tech (html5 or flash), volume, module_id, timecode, video_name~~
+		+ The value JSON object contains the following additional fields: ```playback_rate, subtitle_language, tech (html5 or flash), volume, module_id, timecode, video_name```
 	+ wait
 		+ An event fired when the user requires to wait to buffer additional video. (For example, due to slow internet)
-		+ The value JSON object contains the following additional fields: ~~module_id, timecode, video_name~~
+		+ The value JSON object contains the following additional fields: ```module_id, timecode, video_name```
 
 	+ seek
 		+ An event fired when the user seeks to another part of the video. The timecode field in this event refers to the time the user is seeking to
-		+ The value JSON object contains the following additional fields: ~~module_id, timecode, video_name~~
+		+ The value JSON object contains the following additional fields: ```module_id, timecode, video_name```
 	+ start
 		+ An event fired when the video first starts. The `timecode` field should be 0
-		+ The value JSON object contains the following additional fields: ~~module_id, timecode, video_name~~
+		+ The value JSON object contains the following additional fields: ```module_id, timecode, video_name```
 	+ end
 		+ An event fired when the video ends. The `timecode` field should be close to the length of the video
-		+ The value JSON object contains the following additional fields: ~~module_id, timecode, video_name~~
+		+ The value JSON object contains the following additional fields: ```module_id, timecode, video_name```
 	+ pause
 		+ An event fired when the user pauses the video
-		+ The value JSON object contains the following additional fields: ~~module_id, timecode, video_name~~
+		+ The value JSON object contains the following additional fields: ```module_id, timecode, video_name```
 	+ play
 		+ An event fired when the user restarts a paused video
-		+ The value JSON object contains the following additional fields: ~~module_id, timecode, video_name~~
+		+ The value JSON object contains the following additional fields: ```module_id, timecode, video_name```
 		
 	+ volume_change
 		+ An event fired when the user changes the volume
-		+ The value JSON object contains the following additional fields: ~~playback_rate, subtitle_language, tech, volume, volume_delta, module_id, timecode, video_name~~
+		+ The value JSON object contains the following additional fields: ```playback_rate, subtitle_language, tech, volume, volume_delta, module_id, timecode, video_name```
 	+ subtitle_change
 	+ playback_rate_change
 		+ An event fired when the user changes the playback rate
-		+ The value JSON object contains the following additional fields: ~~playback_rate, playback_rate_delta, subtitle_language, tech, volume, module_id, timecode, video_name~~
+		+ The value JSON object contains the following additional fields: ```playback_rate, playback_rate_delta, subtitle_language, tech, volume, module_id, timecode, video_name```
 	+ download_subtitle
 		+ An event fired when the user clicks the download subtitle button
-		+ The value JSON object contains the following additional fields: ~~language_code~~
+		+ The value JSON object contains the following additional fields: ```language_code```
 	+ download_video
 		+ An event fired when the user clicks the download video button
 * Access Data Fields
 	+ pageview
-		+ This event is fired when a user accesses Coursera's website through a browser. The browser may be a desktop browser (e.g Chrome), or a mobile browser (e.g Chrome Mobile). More specifically, the event is fired when the user downloads all the Javascript required to render the page. If a user hits coursera.org but then closes the browser, or goes to another page before all the Javascript is downloaded, that user will not trigger a ~~pageview~~ event
+		+ This event is fired when a user accesses Coursera's website through a browser. The browser may be a desktop browser (e.g Chrome), or a mobile browser (e.g Chrome Mobile). More specifically, the event is fired when the user downloads all the Javascript required to render the page. If a user hits coursera.org but then closes the browser, or goes to another page before all the Javascript is downloaded, that user will not trigger a ```pageview``` event
 	+ page_requested: This event is fired when a user makes a request to Coursera's website through a browser
-		+ This event is fired when a user makes a request to Coursera's website through a browser. This differs from the pageview event in that it is fired immediately after the user requests the page, not when the user downloads the HTML for rendering the page. This event is not fired when the user navigates within a single page application. There should be less ~~page_requested~~ events than ~~pageview~~ events
+		+ This event is fired when a user makes a request to Coursera's website through a browser. This differs from the pageview event in that it is fired immediately after the user requests the page, not when the user downloads the HTML for rendering the page. This event is not fired when the user navigates within a single page application. There should be less ```page_requested``` events than ```pageview``` events
 	+ page_preloaded
-		+ This event is fired the first time the user downloads Coursera's Javascript for a given page load. This differs from the pageview event in that it is fired before all the Javascript required to render the page is downloaded. This event is not fired when the user navigates within a single page application. There should be less ~~page_preloaded~~ events than ~~pageview~~ events
+		+ This event is fired the first time the user downloads Coursera's Javascript for a given page load. This differs from the pageview event in that it is fired before all the Javascript required to render the page is downloaded. This event is not fired when the user navigates within a single page application. There should be less ```page_preloaded```events than ```pageview``` events
 	+ Access Type: home
 		+ lecture
 		+ supplement
