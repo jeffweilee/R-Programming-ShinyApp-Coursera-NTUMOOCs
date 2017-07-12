@@ -13,7 +13,8 @@
 * [Setup - Shiny Serevr on Ubuntu 12.04 or later](#setup---shiny-serevr-on-ubuntu-12.04-or-later)
 * [Setup - R packages](#setup---r-packages)
 * [Coursera Data Export API](#coursera-data-export-api)
- 
+* [Clickstream Data Guide](#clickstream-data-guide)
+
 ## Environment
 * R-3.3.2
 * [Shiny-Server-1.5.1.834](https://www.rstudio.com/products/shiny/download-server/)
@@ -205,3 +206,45 @@ $ courseraresearchexports jobs download $EXPORT_REQUEST_ID
 	```
 	$ courseraresearchexports db unload_to_csv $CONTAINER_NAME --relation demographic_survey --dest /path/to/dest/
 	```
+## Clickstream Data Guide
+* More info on [Clickstream Data Guide](https://coursera.gitbooks.io/data-exports/content/clickstream_data_guide/) gitbook
+* Clickstream data
+	+ Video: Interactions with lecture videos (e.g start, stop, pause, change subtitles, heartbeats)
+	+ Access: Accessing course description page, course material, and anything else under the url https://coursera.org/learn/YOUR_COURSE_SLUG
+* Metadata
+	+ [partner]_user_id
+	+ hashed_session_cookie_id
+	+ server_timestamp
+	+ hashed_ip
+	+ user_agent
+	+ url
+	+ initial_referrer_url
+	+ browser_language
+	+ course_id
+	+ country_cd
+	+ region_cd
+	+ timezone
+	+ os
+	+ browser
+```
+CREATE TABLE clickstream_events (
+    hashed_user_id varchar,
+    hashed_session_cookie_id varchar,
+    server_timestamp timestamp,
+    hashed_ip varchar,
+    user_agent varchar,
+    url varchar,
+    initial_referrer_url varchar,
+    browser_language varchar,
+    course_id varchar,
+    country_cd varchar,
+    region_cd varchar,
+    timezone varchar,
+    os varchar,
+    browser varchar,
+    key varchar,
+    value varchar
+);
+```
+
+
