@@ -532,7 +532,7 @@ shinyServer(function(input, output, session) {
 					    if(nchar(Q.title) > 19){Q.title <-paste(substr(Q.title, 0, 19), "...") }
 					    score <- as.vector(dbGetQuery(conn = con, paste0("select ", cn , " from pre_questionaire where ", cn , " not like 'Q",i,"%'")))
 						score <- score[score %in% c(1:5)]
-						Q.score.pre <<- rbind(Q.score.pre,score)
+					    # Q.score.pre <<- rbind(Q.score.pre,score)
 						
 					    Q.score <- dbGetQuery(conn = con, paste0("select ", cn , ", count(*) from pre_questionaire where ", cn , " not like 'Q",i,"%' group by ", cn , "  order by count(*) desc"))
 						Q.score <-Q.score[Q.score[,1] %in% c(1:5),]
