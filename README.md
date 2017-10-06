@@ -6,6 +6,18 @@
 <br><br>
 <!--![snapshot](about/snapshot.png)-->
 
+| Overview |
+| ---------|
+| ![snapshot](overview.png)|
+
+| Participation | Grades |
+| ------------- |:-------------:|
+| ![snapshot](participation.png)| ![snapshot](grades.png)|
+
+| Discussion | Wordcloud |
+| ------------- |:-------------:|
+| ![snapshot](discussion.png)| ![snapshot](wordcloud.png)|
+
 ## Table of Content
 * [Environment](#environment)
 * [R packages](#r-packages)
