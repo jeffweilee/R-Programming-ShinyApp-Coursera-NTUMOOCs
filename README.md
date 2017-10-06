@@ -4,19 +4,8 @@
 * Provide Overview, Participation, Engagement, Discussion and Wordcloud sections
 * Retrieve Course Data from Coursera Data Export API
 <br><br>
+* __Latest version is in the dashboard branch__
 <!--![snapshot](about/snapshot.png)-->
-
-| Overview |
-| ---------|
-| ![snapshot](overview.png)|
-
-| Participation | Grades |
-| ------------- |:-------------:|
-| ![snapshot](participation.png)| ![snapshot](grades.png)|
-
-| Discussion | Wordcloud |
-| ------------- |:-------------:|
-| ![snapshot](discussion.png)| ![snapshot](wordcloud.png)|
 
 ## Table of Content
 * [Environment](#environment)
